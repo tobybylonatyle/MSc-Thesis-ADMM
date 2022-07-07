@@ -1,0 +1,1 @@
+start C:\repos\virtualenvironments\thesisenv\Scripts\activate.bat

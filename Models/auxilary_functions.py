@@ -12,7 +12,7 @@ def cost_ALR_site(m):
     cost_DUoS_import   = sum((m.DUoS_import[t,l]  - m.dual[t]) * m.i_S[t,l] for t in m.T for l in m.L)
     cost_DUoS_export   = sum((m.DUoS_export[t,l]  + m.dual[t]) * m.e_S[t,l] for t in m.T for l in m.L)
 
-    additional_penalty_term =  sum(m.dualgamma[t]*(m.commitment_i[t] + m.i_G[t] + sum(m.e_S[t,l] for l in m.L) \
+    additional_penalty_term =  sum((m.dualgamma[t]/2)*(m.commitment_i[t] + m.i_G[t] + sum(m.e_S[t,l] for l in m.L) \
                                                  - m.commitment_e[t] - m.e_G[t] - sum(m.i_S[t,l] for l in m.L)) for t in m.T)
 
     return cost_DUoS_export + cost_DUoS_import + additional_penalty_term
@@ -22,7 +22,7 @@ def cost_ALR_portfolio(m):
     profit_export_grid  = sum((m.price_export[t] - m.dual[t]) * m.e_G[t] for t in m.T)
     commitment_constant = sum(m.dual[t] * (m.commitment_i[t] - m.commitment_e[t]) for t in m.T)
     
-    additional_penalty_term = sum(m.dualgamma[t]*(m.commitment_i[t] + m.i_G[t] + sum(m.e_S[t,l] for l in m.L) \
+    additional_penalty_term = sum((m.dualgamma[t]/2)*(m.commitment_i[t] + m.i_G[t] + sum(m.e_S[t,l] for l in m.L) \
                                                  - m.commitment_e[t] - m.e_G[t] - sum(m.i_S[t,l] for l in m.L)) for t in m.T)
 
     

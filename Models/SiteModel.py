@@ -75,7 +75,7 @@ class SiteModel(pyo.AbstractModel):
   
         self.e_S   = pyo.Var(self.T, self.L, within=pyo.NonNegativeReals)  # Export to portfolio
         self.i_S   = pyo.Var(self.T, self.L, within=pyo.NonNegativeReals)  # Import from portfolio
-        
+
         self.c     = pyo.Var(self.T, self.LB, within=pyo.NonNegativeReals) # Charge
         self.d     = pyo.Var(self.T, self.LB, within=pyo.NonNegativeReals) # Discharge
         self.b     = pyo.Var(self.T, self.LB, within=pyo.NonNegativeReals) # Battery SoC
@@ -100,7 +100,7 @@ class SiteModel(pyo.AbstractModel):
         self.Cons_grid_connect_limit = pyo.Constraint(self.T, self.L, rule=aux.grid_connect_limit)
                 
         self.Cons_balance_site       = pyo.Constraint(self.T, self.L, rule=aux.energy_balance_site)
-        #NOTE this was relaxed; it should be not active then?!
+        #Inactive since it was relaxed.
         # self.Cons_balance_portfolio  = pyo.Constraint(self.T, rule=aux.energy_balance_portfolio)
 
         # -- TESTING

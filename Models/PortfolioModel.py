@@ -65,7 +65,7 @@ class PortfolioModel(pyo.AbstractModel):
 
         self.e_S   = pyo.Param(self.T, self.L, within=pyo.NonNegativeReals, mutable=True)  # Export to portfolio
         self.i_S   = pyo.Param(self.T, self.L, within=pyo.NonNegativeReals, mutable=True)  # Import from portfolio
-        
+
     def __build_variables(self):
         '''defines and builds all variables of the model'''
 
@@ -98,7 +98,7 @@ class PortfolioModel(pyo.AbstractModel):
                 
         # self.Cons_balance_site       = pyo.Constraint(self.T, self.L, rule=aux.energy_balance_site)
 
-        #NOTE this was relaxed; it should be not active then?!
+        #Inactive since it was relaxed
         # self.Cons_balance_portfolio  = pyo.Constraint(self.T, rule=aux.energy_balance_portfolio)
 
         self.Cons_i_compl_bound     = pyo.Constraint(self.T, rule=aux.i_compl_bound)

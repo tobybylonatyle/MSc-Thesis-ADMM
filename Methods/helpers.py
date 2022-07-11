@@ -5,6 +5,7 @@ from Models.MILPModel import MILPModel
 from Models.SiteModel import SiteModel
 from Models.PortfolioModel import PortfolioModel
 import numpy as np
+from pyomo.environ import value as val
 
 
 # -- Initialize Solver --
@@ -34,8 +35,8 @@ def extract_from_locations(location_instance):
         # print(f"Time: {t} -- ",pyo.value(location_instance.dual[t]))
         dualsT.append(pyo.value(location_instance.dual[t]))
         for l in location_instance.L:
-            exports_S_TL[t-1,l-1] = max(0,pyo.value(location_instance.e_S[t,l])) #BUG somtimes this NonNegativeReal is negative (-1E-8)... huh
             if pyo.value(location_instance.e_S[t,l]) < 0:
+                exports_S_TL[t-1,l-1] = max(0,pyo.value(location_instance.e_S[t,l])) #BUG somtimes this NonNegativeReal is negative (-1E-8)... huh
                 print("BUG")
             imports_S_TL[t-1,l-1] = pyo.value(location_instance.i_S[t,l])
     
@@ -74,19 +75,54 @@ def feed_to_locations(locations_instance, dualsT, exports_G_T, imports_G_TL):
     return locations_instance
 
 def update_the_duals(locations_instance, portfolio_instance):
-    dualsT = []
-    primal_residualT = []
-
+    new_dualsT = np.zeros(int(pyo.value(locations_instance.N_t)))
+    
+    primal_residualsT = np.zeros(int(pyo.value(locations_instance.N_t)))   
     for t in locations_instance.T:
-        primal_residual = (pyo.value(portfolio_instance.commitment_i[t])+ pyo.value(portfolio_instance.i_G[t]) + sum(pyo.value(locations_instance.e_S[t,l]) for l in locations_instance.L) - pyo.value(portfolio_instance.commitment_e[t]) - pyo.value(portfolio_instance.e_G[t]) - sum(pyo.value(locations_instance.i_S[t,l]) for l in locations_instance.L))
-        mama =  pyo.value(locations_instance.dual[t]) + pyo.value(locations_instance.dualgamma[t])*primal_residual
+        #Calculate primal residual for a given t
+        primal_residual = pyo.value(portfolio_instance.commitment_i[t]) \
+                            + pyo.value(portfolio_instance.i_G[t]) \
+                            + sum(pyo.value(locations_instance.e_S[t,l]) for l in locations_instance.L) \
+                            - pyo.value(portfolio_instance.commitment_e[t]) \
+                            - pyo.value(portfolio_instance.e_G[t]) \
+                            - sum(pyo.value(locations_instance.i_S[t,l]) for l in locations_instance.L)
+
+
+        primal_residualsT[t-1] = primal_residual
+        # calculate what the new dual should be then, for a given t
+        new_dualsT[t-1] =  pyo.value(locations_instance.dual[t]) + pyo.value(locations_instance.dualgamma[t])*primal_residual
+
+        ###NOTE -- Project duals -- ist that a thing still???  -----
         
-        dualsT.append(mama)
-        primal_residualT.append(primal_residual)
+        #Update the new dual and in locations_instance and portfolio_instance.
+        locations_instance.dual[t] = new_dualsT[t-1] #just a misalignment between pyomo iterator and numpy iterator
+        portfolio_instance.dual[t] = new_dualsT[t-1]
 
-        locations_instance.dual[t] = mama
-        portfolio_instance.dual[t] = mama
+    return locations_instance, portfolio_instance, new_dualsT, primal_residualsT
 
-        # print(f"time {t} --", primal_residual)
 
-    return locations_instance, portfolio_instance, np.array(dualsT), np.array(primal_residualT)
+def calculate_obj_cost(locations_instance, portfolio_instance):
+    SiteExport = sum( locations_instance.DUoS_export[t,l]*val(locations_instance.e_S[t,l]) for t in locations_instance.T for l in locations_instance.L)
+    SiteImport = sum( locations_instance.DUoS_import[t,l]*val(locations_instance.i_S[t,l]) for t in locations_instance.T for l in locations_instance.L)
+    GridExport = sum( portfolio_instance.price_export[t]*val(portfolio_instance.e_G[t]) for t in portfolio_instance.T)
+    GridImport = sum( portfolio_instance.price_import[t]*val(portfolio_instance.i_G[t]) for t in portfolio_instance.T)
+    objective_cost = SiteExport + SiteImport + GridImport - GridExport
+
+
+    residualsT = np.zeros(int(pyo.value(locations_instance.N_t)))
+    for t in locations_instance.T:
+        residualsT[t-1] = pyo.value(portfolio_instance.commitment_i[t]) \
+                         + pyo.value(portfolio_instance.i_G[t]) \
+                         + sum(pyo.value(locations_instance.e_S[t,l]) for l in locations_instance.L) \
+                         - pyo.value(portfolio_instance.commitment_e[t]) \
+                         - pyo.value(portfolio_instance.e_G[t]) \
+                         - sum(pyo.value(locations_instance.i_S[t,l]) for l in locations_instance.L)
+
+
+    # Meh, not sure about this again....
+    augmentation = sum(locations_instance.dualgamma[t]*((pyo.value(portfolio_instance.commitment_i[t])+pyo.value(portfolio_instance.i_G[t])+sum(pyo.value(locations_instance.e_S[t,l]) for l in locations_instance.L) - pyo.value(portfolio_instance.commitment_e[t]) - pyo.value(portfolio_instance.e_G[t]) - sum(pyo.value(locations_instance.i_S[t,l]) for l in locations_instance.L))**2) for t in locations_instance.T)
+
+
+    return objective_cost, residualsT, augmentation
+    
+    

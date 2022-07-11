@@ -12,28 +12,51 @@ def cost_ALR_site(m):
     cost_DUoS_import   = sum((m.DUoS_import[t,l]  - m.dual[t]) * m.i_S[t,l] for t in m.T for l in m.L)
     cost_DUoS_export   = sum((m.DUoS_export[t,l]  + m.dual[t]) * m.e_S[t,l] for t in m.T for l in m.L)
 
-    additional_penalty_term =  sum((m.dualgamma[t]/2)*(m.commitment_i[t] + m.i_G[t] + sum(m.e_S[t,l] for l in m.L) \
-                                                 - m.commitment_e[t] - m.e_G[t] - sum(m.i_S[t,l] for l in m.L)) for t in m.T)
+    # THIS is probably wrong!!!! definitely should be the square of this?!
+    # augmentation =  sum((m.dualgamma[t]/2)*(m.commitment_i[t] + m.i_G[t] + sum(m.e_S[t,l] for l in m.L) \
+                                                #  - m.commitment_e[t] - m.e_G[t] - sum(m.i_S[t,l] for l in m.L)) for t in m.T)
 
-    return cost_DUoS_export + cost_DUoS_import + additional_penalty_term
+
+    monster1 =  sum( m.commitment_i[t]*(m.commitment_i[t] + m.i_G[t] + sum(m.e_S[t,l] for l in m.L) - m.commitment_e[t] - m.e_G[t] - sum(m.i_S[t,l] for l in m.L)) for t in m.T )
+    monster2 =  sum( m.i_G[t]*(m.commitment_i[t] + m.i_G[t] + sum(m.e_S[t,l] for l in m.L) - m.commitment_e[t] - m.e_G[t] - sum(m.i_S[t,l] for l in m.L)) for t in m.T )
+    monster3 =  sum( sum(m.e_S[t,l] for l in m.L)*(m.commitment_i[t] + m.i_G[t] + sum(m.e_S[t,l] for l in m.L) - m.commitment_e[t] - m.e_G[t] - sum(m.i_S[t,l] for l in m.L)) for t in m.T )
+    monster4 = -sum( m.commitment_e[t]*(m.commitment_i[t] + m.i_G[t] + sum(m.e_S[t,l] for l in m.L) - m.commitment_e[t] - m.e_G[t] - sum(m.i_S[t,l] for l in m.L)) for t in m.T )
+    monster5 = -sum( m.e_G[t]*(m.commitment_i[t] + m.i_G[t] + sum(m.e_S[t,l] for l in m.L) - m.commitment_e[t] - m.e_G[t] - sum(m.i_S[t,l] for l in m.L)) for t in m.T )
+    monster6 = -sum( sum(m.i_S[t,l] for l in m.L)*(m.commitment_i[t] + m.i_G[t] + sum(m.e_S[t,l] for l in m.L) - m.commitment_e[t] - m.e_G[t] - sum(m.i_S[t,l] for l in m.L)) for t in m.T )
+    monsters = monster1 + monster2 + monster3 + monster4 + monster5 + monster6
+
+    augmentation = (sum(m.dualgamma[t] for t in m.T)/2)*monsters
+
+
+    return cost_DUoS_export + cost_DUoS_import + augmentation 
 
 def cost_ALR_portfolio(m):
     cost_import_grid    = sum((m.price_import[t] + m.dual[t]) * m.i_G[t] for t in m.T)
     profit_export_grid  = sum((m.price_export[t] - m.dual[t]) * m.e_G[t] for t in m.T)
     commitment_constant = sum(m.dual[t] * (m.commitment_i[t] - m.commitment_e[t]) for t in m.T)
     
-    additional_penalty_term = sum((m.dualgamma[t]/2)*(m.commitment_i[t] + m.i_G[t] + sum(m.e_S[t,l] for l in m.L) \
-                                                 - m.commitment_e[t] - m.e_G[t] - sum(m.i_S[t,l] for l in m.L)) for t in m.T)
+    #  THIS is probably wrong!!!! definitely . should be thr ssquare of this..
+    # augmentation = sum((m.dualgamma[t]/2)*(m.commitment_i[t] + m.i_G[t] + sum(m.e_S[t,l] for l in m.L) \
+    #                                              - m.commitment_e[t] - m.e_G[t] - sum(m.i_S[t,l] for l in m.L)) for t in m.T)
+
+    monster1 =  sum( m.commitment_i[t]*(m.commitment_i[t] + m.i_G[t] + sum(m.e_S[t,l] for l in m.L) - m.commitment_e[t] - m.e_G[t] - sum(m.i_S[t,l] for l in m.L)) for t in m.T )
+    monster2 =  sum( m.i_G[t]*(m.commitment_i[t] + m.i_G[t] + sum(m.e_S[t,l] for l in m.L) - m.commitment_e[t] - m.e_G[t] - sum(m.i_S[t,l] for l in m.L)) for t in m.T )
+    monster3 =  sum( sum(m.e_S[t,l] for l in m.L)*(m.commitment_i[t] + m.i_G[t] + sum(m.e_S[t,l] for l in m.L) - m.commitment_e[t] - m.e_G[t] - sum(m.i_S[t,l] for l in m.L)) for t in m.T )
+    monster4 = -sum( m.commitment_e[t]*(m.commitment_i[t] + m.i_G[t] + sum(m.e_S[t,l] for l in m.L) - m.commitment_e[t] - m.e_G[t] - sum(m.i_S[t,l] for l in m.L)) for t in m.T )
+    monster5 = -sum( m.e_G[t]*(m.commitment_i[t] + m.i_G[t] + sum(m.e_S[t,l] for l in m.L) - m.commitment_e[t] - m.e_G[t] - sum(m.i_S[t,l] for l in m.L)) for t in m.T )
+    monster6 = -sum( sum(m.i_S[t,l] for l in m.L)*(m.commitment_i[t] + m.i_G[t] + sum(m.e_S[t,l] for l in m.L) - m.commitment_e[t] - m.e_G[t] - sum(m.i_S[t,l] for l in m.L)) for t in m.T )
+    monsters = monster1 + monster2 + monster3 + monster4 + monster5 + monster6
+
+    augmentation = (sum(m.dualgamma[t] for t in m.T)/2)*monsters
 
     
-    return cost_import_grid - profit_export_grid + commitment_constant + additional_penalty_term
+    return cost_import_grid - profit_export_grid + commitment_constant + augmentation 
 
 
 
 def cost_LR(m):
     cost_DUoS_export   = sum(m.DUoS_export[t,l] * m.e_S[t,l] for t in m.T for l in m.L)
     cost_DUoS_import   = sum(m.DUoS_import[t,l] * m.i_S[t,l] for t in m.T for l in m.L)
-    
 
     cost_import_grid   = sum(m.price_import[t] * m.i_G[t] for t in m.T)
     profit_export_grid = sum(m.price_export[t] * m.e_G[t] for t in m.T)

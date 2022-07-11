@@ -76,7 +76,7 @@ def feed_to_locations(locations_instance, dualsT, exports_G_T, imports_G_TL):
 
 def update_the_duals(locations_instance, portfolio_instance):
     new_dualsT = np.zeros(int(pyo.value(locations_instance.N_t)))
-    
+
     primal_residualsT = np.zeros(int(pyo.value(locations_instance.N_t)))   
     for t in locations_instance.T:
         #Calculate primal residual for a given t
@@ -102,14 +102,14 @@ def update_the_duals(locations_instance, portfolio_instance):
 
 
 def calculate_obj_cost(locations_instance, portfolio_instance):
-    SiteExport = sum( locations_instance.DUoS_export[t,l]*val(locations_instance.e_S[t,l]) for t in locations_instance.T for l in locations_instance.L)
-    SiteImport = sum( locations_instance.DUoS_import[t,l]*val(locations_instance.i_S[t,l]) for t in locations_instance.T for l in locations_instance.L)
-    GridExport = sum( portfolio_instance.price_export[t]*val(portfolio_instance.e_G[t]) for t in portfolio_instance.T)
-    GridImport = sum( portfolio_instance.price_import[t]*val(portfolio_instance.i_G[t]) for t in portfolio_instance.T)
+    SiteExport = sum( locations_instance.DUoS_export[t,l]*pyo.value(locations_instance.e_S[t,l]) for t in locations_instance.T for l in locations_instance.L)
+    SiteImport = sum( locations_instance.DUoS_import[t,l]*pyo.value(locations_instance.i_S[t,l]) for t in locations_instance.T for l in locations_instance.L)
+    GridExport = sum( portfolio_instance.price_export[t]*pyo.value(portfolio_instance.e_G[t]) for t in portfolio_instance.T)
+    GridImport = sum( portfolio_instance.price_import[t]*pyo.value(portfolio_instance.i_G[t]) for t in portfolio_instance.T)
     objective_cost = SiteExport + SiteImport + GridImport - GridExport
 
-
-    residualsT = np.zeros(int(pyo.value(locations_instance.N_t)))
+    dualsT = np.zeros(int(pyo.value(locations_instance.N_t)))
+    residualsT = np.zeros(int(pyo.value(locations_instance.N_t))) # Residuals of complicating constraint
     for t in locations_instance.T:
         residualsT[t-1] = pyo.value(portfolio_instance.commitment_i[t]) \
                          + pyo.value(portfolio_instance.i_G[t]) \
@@ -119,10 +119,9 @@ def calculate_obj_cost(locations_instance, portfolio_instance):
                          - sum(pyo.value(locations_instance.i_S[t,l]) for l in locations_instance.L)
 
 
-    # Meh, not sure about this again....
-    augmentation = sum(locations_instance.dualgamma[t]*((pyo.value(portfolio_instance.commitment_i[t])+pyo.value(portfolio_instance.i_G[t])+sum(pyo.value(locations_instance.e_S[t,l]) for l in locations_instance.L) - pyo.value(portfolio_instance.commitment_e[t]) - pyo.value(portfolio_instance.e_G[t]) - sum(pyo.value(locations_instance.i_S[t,l]) for l in locations_instance.L))**2) for t in locations_instance.T)
+        dualsT[t-1] = pyo.value(portfolio_instance.dual[t])
+    
 
-
-    return objective_cost, residualsT, augmentation
+    return objective_cost, residualsT, dualsT
     
     

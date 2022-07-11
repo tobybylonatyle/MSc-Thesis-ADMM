@@ -140,7 +140,8 @@ def solve_RFL():
 
         obj_cost, residualsT, augmentation = helpers.calculate_obj_cost(locations_instance, portfolio_instance)
         print(obj_cost)
-        print(residualsT)
+        # print(residualsT)
+        print(augmentation)
 
         #TODO Termination Condition
 

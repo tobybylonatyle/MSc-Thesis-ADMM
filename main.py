@@ -7,7 +7,7 @@ import numpy as np
 SOLVER_NAME = 'gurobi'
 INSTANCE_SIZE = 10
 EQUAL_PRICES = False
-MAX_ITER = 100
+MAX_ITER = 50
 TOLERANCE = 1
 
 def solve_MILP():
@@ -98,7 +98,7 @@ def solve_RFL():
     #TODO Try to make SiteModel and PortfolioModel LPs!!!!!! 
 
 
-
+    computational_data = {'obj_cost': [], 'residualsT' : [], 'dualsT': [], 'dualized_constraint_violation': [], 'dualgammaT': [] }
 
     print("> Solving RFL")
     solver = helpers.build_solver(SOLVER_NAME)
@@ -111,12 +111,12 @@ def solve_RFL():
 
     # Intialize for the very first solve 
     for t in locations_instance.T:
-        locations_instance.dualgamma[t] = 250 # Fixed dualgamma for now
-        locations_instance.i_G[t] = 10
+        locations_instance.dualgamma[t] = 50 # Fixed dualgamma for now
+        locations_instance.i_G[t] = 0
         locations_instance.e_G[t] = 0
 
     for t in portfolio_instnace.T:
-        portfolio_instnace.dualgamma[t] = 250
+        portfolio_instnace.dualgamma[t] = 50
 
     iter = 0
 
@@ -138,15 +138,24 @@ def solve_RFL():
 
         # print(dualsT[:5])
 
-        obj_cost, residualsT, augmentation = helpers.calculate_obj_cost(locations_instance, portfolio_instance)
-        print(obj_cost)
+        obj_cost, residualsT, dualsT, dualgammaT = helpers.calculate_obj_cost(locations_instance, portfolio_instance)
+        violation = helpers.calculate_dualized_violation(locations_instance)
+        # print(obj_cost)
         # print(residualsT)
-        print(augmentation)
+        # print(dualsT)
+        # print(dualsT*residualsT)
+
+        computational_data['obj_cost'].append(obj_cost)
+        computational_data['residualsT'].append(residualsT)
+        computational_data["dualsT"].append(dualsT)
+        computational_data['dualgammaT'].append(dualgammaT)
+        computational_data['dualized_constraint_violation'].append(violation)
 
         #TODO Termination Condition
 
         iter += 1 
 
+    return computational_data
 
 def solve_MSL():
     """Parallel ADMM,  feed portolio_instance and locations_instance simulatniously, then """

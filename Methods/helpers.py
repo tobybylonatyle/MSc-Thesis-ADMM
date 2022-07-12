@@ -126,6 +126,7 @@ def calculate_obj_cost(locations_instance, portfolio_instance):
     
     
 def calculate_dualized_violation(m):
-    violation = sum(pyo.value(m.dual[t])*(pyo.value(m.commitment_i[t])+pyo.value(m.i_G[t])+sum(pyo.value(m.e_S[t,l]) for l in m.L) - pyo.value(m.commitment_e[t]) - pyo.value(m.e_G[t]) - sum(pyo.value(m.i_S[t,l]) for l in m.L)) for t in m.T)
+    '''Just by how much the dualized (complicating constraint: energy balance protfolio) is not actually zero.'''
+    violation = sum(pyo.value(m.commitment_i[t])+pyo.value(m.i_G[t])+sum(pyo.value(m.e_S[t,l]) for l in m.L) - pyo.value(m.commitment_e[t]) - pyo.value(m.e_G[t]) - sum(pyo.value(m.i_S[t,l]) for l in m.L) for t in m.T)
 
     return violation

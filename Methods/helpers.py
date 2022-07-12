@@ -108,6 +108,7 @@ def calculate_obj_cost(locations_instance, portfolio_instance):
     GridImport = sum( portfolio_instance.price_import[t]*pyo.value(portfolio_instance.i_G[t]) for t in portfolio_instance.T)
     objective_cost = SiteExport + SiteImport + GridImport - GridExport
 
+    dualgammaT = np.zeros(int(pyo.value(locations_instance.N_t)))
     dualsT = np.zeros(int(pyo.value(locations_instance.N_t)))
     residualsT = np.zeros(int(pyo.value(locations_instance.N_t))) # Residuals of complicating constraint
     for t in locations_instance.T:
@@ -120,9 +121,10 @@ def calculate_obj_cost(locations_instance, portfolio_instance):
 
 
         dualsT[t-1] = pyo.value(portfolio_instance.dual[t])
+        dualgammaT[t-1] = pyo.value(portfolio_instance.dualgamma[t])
     
 
-    return objective_cost, residualsT, dualsT
+    return objective_cost, residualsT, dualsT, dualgammaT
     
     
 def calculate_dualized_violation(m):

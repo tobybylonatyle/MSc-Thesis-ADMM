@@ -7,7 +7,7 @@ import numpy as np
 SOLVER_NAME = 'gurobi'
 INSTANCE_SIZE = 10
 EQUAL_PRICES = False
-MAX_ITER = 50
+MAX_ITER = 100
 TOLERANCE = 1
 
 def solve_MILP():
@@ -98,9 +98,9 @@ def solve_RFL():
     #TODO Try to make SiteModel and PortfolioModel LPs!!!!!! 
 
 
-    computational_data = {'obj_cost': [], 'residualsT' : [], 'dualsT': [], 'dualized_constraint_violation': [], 'dualgammaT': [] }
+    computational_data = {'obj_cost': [], 'dualized_constraint_value' : [], 'augmentation_value': [], 'dualsT': [], 'primal_residualsT': [], 'dualgammasT' : [] }
 
-    print("> Solving RFL")
+    print(" > Solving RFL")
     solver = helpers.build_solver(SOLVER_NAME)
 
     locations_model = helpers.build_model("SiteModel")
@@ -111,12 +111,12 @@ def solve_RFL():
 
     # Intialize for the very first solve 
     for t in locations_instance.T:
-        locations_instance.dualgamma[t] = 50 # Fixed dualgamma for now
+        locations_instance.dualgamma[t] = -25 # Fixed dualgamma for now
         locations_instance.i_G[t] = 0
         locations_instance.e_G[t] = 0
 
     for t in portfolio_instnace.T:
-        portfolio_instnace.dualgamma[t] = 50
+        portfolio_instnace.dualgamma[t] = -25
 
     iter = 0
 
@@ -125,35 +125,40 @@ def solve_RFL():
         print(f"iteration {iter}")
 
         
-        result_p = solver.solve(locations_instance) # Solve locations subproblem
-        # print("locations solved")
-        dualsT,  exports_S_TL, imports_S_TL = helpers.extract_from_locations(locations_instance) # Extract data from locations supbroblem 
-        portfolio_instance = helpers.feed_to_portfolio(portfolio_instnace, dualsT, exports_S_TL, imports_S_TL) # Feed locations subproblem data into portfolio subproblem
-        result_l = solver.solve(portfolio_instance) # Solve portfolio subproblem
-        # print("portfolio solved")
-        dualsT, exports_G_T, imports_G_TL = helpers.extract_from_portfolio(portfolio_instance) # Extract data from portfolio subproblem
-        locations_instance = helpers.feed_to_locations(locations_instance, dualsT, exports_G_T, imports_G_TL) # Feed portfolio subproblem data into locations subproblem
+        result_p                            = solver.solve(locations_instance) # Solve locations subproblem
+        exports_S_TL, imports_S_TL          = helpers.extract_from_locations(locations_instance) # Extract data from locations supbroblem 
+        portfolio_instance                  = helpers.feed_to_portfolio(portfolio_instnace, exports_S_TL, imports_S_TL) # Feed locations subproblem data into portfolio subproblem
+        result_l                            = solver.solve(portfolio_instance) # Solve portfolio subproblem
+        exports_G_T, imports_G_T            = helpers.extract_from_portfolio(portfolio_instance) # Extract data from portfolio subproblem
+        locations_instance                  = helpers.feed_to_locations(locations_instance, exports_G_T, imports_G_T) # Feed portfolio subproblem data into locations subproblem
         
-        locations_instance, portfolio_instance, dualsT, primal_residuals = helpers.update_the_duals(locations_instance, portfolio_instance) # Update the dual variables
+        locations_instance, portfolio_instance, dualsT, primal_residualsT, dualgammasT = helpers.update_the_duals(locations_instance, portfolio_instance) # Update the dual variables
 
-        # print(dualsT[:5])
 
-        obj_cost, residualsT, dualsT, dualgammaT = helpers.calculate_obj_cost(locations_instance, portfolio_instance)
-        violation = helpers.calculate_dualized_violation(locations_instance)
-        # print(obj_cost)
-        # print(residualsT)
-        # print(dualsT)
-        # print(dualsT*residualsT)
+        objective_cost_original, dualized_constraint_value, augmentation_value =  helpers.calculate_obj_cost(locations_instance, portfolio_instance)
+     
 
-        computational_data['obj_cost'].append(obj_cost)
-        computational_data['residualsT'].append(residualsT)
-        computational_data["dualsT"].append(dualsT)
-        computational_data['dualgammaT'].append(dualgammaT)
-        computational_data['dualized_constraint_violation'].append(violation)
+        # Store computational Results
+        computational_data['obj_cost'].append(objective_cost_original)
+        computational_data['dualized_constraint_value'].append(dualized_constraint_value)
+        computational_data['augmentation_value'].append(augmentation_value)
+        computational_data['dualsT'].append(dualsT)
+        computational_data['primal_residualsT'].append(primal_residualsT)
+        computational_data['dualgammasT'].append(dualgammasT)
+
+
+
+
 
         #TODO Termination Condition
 
         iter += 1 
+    # Quickly Process Computational Data: lists of lists are covnerted into a numpy matrix. 
+    # Indicies are in order (iteration, time period)
+    computational_data['dualsT'] = np.stack(computational_data['dualsT'],axis=0)
+    computational_data['primal_residualsT'] = np.stack(computational_data['primal_residualsT'],axis=0)
+    computational_data['dualgammasT'] = np.stack(computational_data['dualgammasT'],axis=0)
+
 
     return computational_data
 

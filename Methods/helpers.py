@@ -36,7 +36,7 @@ def extract_from_locations(location_instance):
             if pyo.value(location_instance.e_S[t,l]) < 0: #BUG prevention
                 exports_S_TL[t-1,l-1] = max(0,pyo.value(location_instance.e_S[t,l])) #BUG somtimes this NonNegativeReal is negative (-1E-8)... huh
                 print("BUG")
-            
+
             exports_S_TL[t-1,l-1] = pyo.value(location_instance.e_S[t,l])
             imports_S_TL[t-1,l-1] = pyo.value(location_instance.i_S[t,l])
     
@@ -59,7 +59,7 @@ def extract_from_portfolio(portfolio_instance):
 
     for t in portfolio_instance.T:
         exports_G_T.append(pyo.value(portfolio_instance.e_G[t]))
-        imports_G_T.append(pyo.value(portfolio_instance.e_G[t]))
+        imports_G_T.append(pyo.value(portfolio_instance.i_G[t]))
 
     return exports_G_T, imports_G_T
 

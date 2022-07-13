@@ -37,7 +37,7 @@ def extract_from_locations(location_instance):
                 exports_S_TL[t-1,l-1] = max(0,pyo.value(location_instance.e_S[t,l])) #BUG somtimes this NonNegativeReal is negative (-1E-8)... huh
                 print("BUG")
             
-            exports_S_TL[t-1,l-1] = pyo.value(location_instance.i_S[t,l])
+            exports_S_TL[t-1,l-1] = pyo.value(location_instance.e_S[t,l])
             imports_S_TL[t-1,l-1] = pyo.value(location_instance.i_S[t,l])
     
     return exports_S_TL, imports_S_TL

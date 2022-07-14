@@ -83,10 +83,10 @@ def update_the_duals(locations_instance, portfolio_instance):
                             - pyo.value(portfolio_instance.commitment_e[t]) \
                             - pyo.value(portfolio_instance.e_G[t]) \
                             - sum(pyo.value(locations_instance.i_S[t,l]) for l in locations_instance.L)
-        dualgammasT[t-1] = pyo.value(locations_instance.dualgamma[t])
+        
 
         primal_residualsT[t-1] = primal_residual
-        # calculate what the new dual should be then, for a given t
+        dualgammasT[t-1] = pyo.value(locations_instance.dualgamma[t])
         new_dualsT[t-1] =  pyo.value(locations_instance.dual[t]) + pyo.value(locations_instance.dualgamma[t])*primal_residual
 
         ###NOTE -- Project duals -- ist that a thing still???  -----

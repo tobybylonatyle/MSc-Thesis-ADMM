@@ -103,6 +103,7 @@ class PortfolioModel(pyo.AbstractModel):
 
         self.Cons_i_compl_bound     = pyo.Constraint(self.T, rule=aux.i_compl_bound)
         self.Cons_e_compl_bound     = pyo.Constraint(self.T, rule=aux.e_compl_bound)
+        # self.Cons_i_e_compl         = pyo.Constraint(self.T, rule=aux.i_e_compl)
 
     def __build_objective(self):
         self.Objective_Cost = pyo.Objective(rule=aux.cost_ALR_portfolio, sense=pyo.minimize) 

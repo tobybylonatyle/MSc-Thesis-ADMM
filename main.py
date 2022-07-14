@@ -5,9 +5,9 @@ import numpy as np
 
 
 SOLVER_NAME = 'gurobi'
-INSTANCE_SIZE = 10
+INSTANCE_SIZE = 2
 EQUAL_PRICES = False
-MAX_ITER = 100
+MAX_ITER = 30
 TOLERANCE = 1
 
 def solve_MILP():
@@ -88,8 +88,6 @@ def solve_ADMM():
     #     print(pyo.value(location_instances[1].dual[t]))
 
     
-
-
 def solve_RFL():
     """Sequential ADMM, first solve 1st subproblem, feed those vars as params into 2nd subproblem, 
     feed 2nd subproblem vars into 1st subproblem as params then update duals, and repeat """
@@ -97,8 +95,12 @@ def solve_RFL():
     #TODO understand how updating duals works in this specific problem!!!!
     #TODO Try to make SiteModel and PortfolioModel LPs!!!!!! 
 
+    #IDEA: what am i initializing the duals to? maybe thats the issue. This seems not wanting to work in sovler.
+    #IDEA: rewrite the monster, defintiely the lambda cant be taken there. (done, homerun)
+    #IDEA: Use persitant solver for better perforamnce
 
-    computational_data = {'obj_cost': [], 'dualized_constraint_value' : [], 'augmentation_value': [], 'dualsT': [], 'primal_residualsT': [], 'dualgammasT' : [] }
+
+    computational_data = {'obj_cost': [], 'dualized_constraint_value' : [], 'augmentation_value': [], 'dualsT': [], 'primal_residualsT': [], 'dualgammasT' : [], 'min_obj' :[] }
 
     print(" > Solving RFL")
     solver = helpers.build_solver(SOLVER_NAME)
@@ -107,16 +109,18 @@ def solve_RFL():
     locations_instance = locations_model.build_instance(instance_size=INSTANCE_SIZE, equal_prices=EQUAL_PRICES)
 
     portfolio_model = helpers.build_model("PortfolioModel")
-    portfolio_instnace = portfolio_model.build_instance(instance_size=INSTANCE_SIZE, equal_prices=EQUAL_PRICES)
+    portfolio_instance = portfolio_model.build_instance(instance_size=INSTANCE_SIZE, equal_prices=EQUAL_PRICES)
 
     # Intialize for the very first solve 
     for t in locations_instance.T:
-        locations_instance.dualgamma[t] = -25 # Fixed dualgamma for now
+        locations_instance.dual[t] = 10
+        locations_instance.dualgamma[t] = 100 # Fixed dualgamma for now
         locations_instance.i_G[t] = 0
         locations_instance.e_G[t] = 0
 
-    for t in portfolio_instnace.T:
-        portfolio_instnace.dualgamma[t] = -25
+    for t in portfolio_instance.T:
+        portfolio_instance.dual[t] = 10
+        portfolio_instance.dualgamma[t] = 100
 
     iter = 0
 
@@ -127,15 +131,13 @@ def solve_RFL():
         
         result_p                            = solver.solve(locations_instance) # Solve locations subproblem
         exports_S_TL, imports_S_TL          = helpers.extract_from_locations(locations_instance) # Extract data from locations supbroblem 
-        portfolio_instance                  = helpers.feed_to_portfolio(portfolio_instnace, exports_S_TL, imports_S_TL) # Feed locations subproblem data into portfolio subproblem
+        portfolio_instance                  = helpers.feed_to_portfolio(portfolio_instance, exports_S_TL, imports_S_TL) # Feed locations subproblem data into portfolio subproblem
         result_l                            = solver.solve(portfolio_instance) # Solve portfolio subproblem
         exports_G_T, imports_G_T            = helpers.extract_from_portfolio(portfolio_instance) # Extract data from portfolio subproblem
         locations_instance                  = helpers.feed_to_locations(locations_instance, exports_G_T, imports_G_T) # Feed portfolio subproblem data into locations subproblem
         
-        locations_instance, portfolio_instance, dualsT, primal_residualsT, dualgammasT = helpers.update_the_duals(locations_instance, portfolio_instance) # Update the dual variables
-
-
-        objective_cost_original, dualized_constraint_value, augmentation_value =  helpers.calculate_obj_cost(locations_instance, portfolio_instance)
+        locations_instance, portfolio_instance, dualsT, primal_residualsT, dualgammasT    = helpers.update_the_duals(locations_instance, portfolio_instance) # Update the dual variables
+        objective_cost_original, dualized_constraint_value, augmentation_value, min_obj   = helpers.calculate_obj_cost(locations_instance, portfolio_instance)
      
 
         # Store computational Results
@@ -145,10 +147,7 @@ def solve_RFL():
         computational_data['dualsT'].append(dualsT)
         computational_data['primal_residualsT'].append(primal_residualsT)
         computational_data['dualgammasT'].append(dualgammasT)
-
-
-
-
+        computational_data['min_obj'].append(min_obj)
 
         #TODO Termination Condition
 
@@ -160,7 +159,7 @@ def solve_RFL():
     computational_data['dualgammasT'] = np.stack(computational_data['dualgammasT'],axis=0)
 
 
-    return computational_data
+    return computational_data, portfolio_instance, locations_instance
 
 def solve_MSL():
     """Parallel ADMM,  feed portolio_instance and locations_instance simulatniously, then """

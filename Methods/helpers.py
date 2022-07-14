@@ -73,8 +73,8 @@ def feed_to_locations(locations_instance, exports_G_T, imports_G_TL):
 def update_the_duals(locations_instance, portfolio_instance):
     new_dualsT = np.zeros(int(pyo.value(locations_instance.N_t)))
     dualgammasT = np.zeros(int(pyo.value(locations_instance.N_t)))
-
-    primal_residualsT = np.zeros(int(pyo.value(locations_instance.N_t)))   
+    primal_residualsT = np.zeros(int(pyo.value(locations_instance.N_t))) 
+      
     for t in locations_instance.T:
         #Calculate primal residual for a given t
         primal_residual = pyo.value(portfolio_instance.commitment_i[t]) \
@@ -109,8 +109,8 @@ def calculate_obj_cost(locations_instance, portfolio_instance):
     mP = portfolio_instance
     dualized_constraint_value = sum(pyo.value(mP.dual[t])*(pyo.value(mP.commitment_i[t])+pyo.value(mP.i_G[t])+sum(pyo.value(mL.e_S[t,l]) for l in mL.L) - pyo.value(mP.commitment_e[t]) - pyo.value(mP.e_G[t]) - sum(pyo.value(mL.i_S[t,l]) for l in mL.L)) for t in mP.T)
 
-    augmentation_value = sum((pyo.value(mP.dualgamma[t])/2)*(pyo.value(mP.commitment_i[t])+pyo.value(mP.i_G[t])+sum(pyo.value(mL.e_S[t,l]) for l in mL.L) - pyo.value(mP.commitment_e[t]) - pyo.value(mP.e_G[t]) - sum(pyo.value(mL.i_S[t,l]) for l in mL.L)) for t in mP.T)
-
+    augmentation_value = sum((pyo.value(mP.dualgamma[t])/2)*((pyo.value(mP.commitment_i[t])+pyo.value(mP.i_G[t])+sum(pyo.value(mL.e_S[t,l]) for l in mL.L) - pyo.value(mP.commitment_e[t]) - pyo.value(mP.e_G[t]) - sum(pyo.value(mL.i_S[t,l]) for l in mL.L))**2) for t in mP.T)
+    
 
 
     return objective_cost_original, dualized_constraint_value, augmentation_value

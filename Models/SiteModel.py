@@ -85,8 +85,8 @@ class SiteModel(pyo.AbstractModel):
         #self.gamma = pyo.Var(self.T, within=pyo.Binary) # Binary for export/import complementarity
 
         #--TESTING
-        self.z     = pyo.Var(self.T, self.LB, within=pyo.Binary) # Binary for charging/discharging complementarity
-        self.delta = pyo.Var(self.T, self.L, within=pyo.Binary)  # Binary for send/receive complementarity
+        # self.z     = pyo.Var(self.T, self.LB, within=pyo.Binary) # Binary for charging/discharging complementarity
+        # self.delta = pyo.Var(self.T, self.L, within=pyo.Binary)  # Binary for send/receive complementarity
 
     def __build_constraints(self):
         '''builds all constraints of the model'''
@@ -104,10 +104,10 @@ class SiteModel(pyo.AbstractModel):
         # self.Cons_balance_portfolio  = pyo.Constraint(self.T, rule=aux.energy_balance_portfolio)
 
         # -- TESTING
-        self.Cons_c_compl_bound     = pyo.Constraint(self.T, self.LB, rule=aux.c_compl_bound)
-        self.Cons_d_compl_bound     = pyo.Constraint(self.T, self.LB, rule=aux.d_compl_bound)
-        self.Cons_r_compl_bound     = pyo.Constraint(self.T, self.L, rule=aux.r_compl_bound)
-        self.Cons_s_compl_bound     = pyo.Constraint(self.T, self.L, rule=aux.s_compl_bound)
+        # self.Cons_c_compl_bound     = pyo.Constraint(self.T, self.LB, rule=aux.c_compl_bound)
+        # self.Cons_d_compl_bound     = pyo.Constraint(self.T, self.LB, rule=aux.d_compl_bound)
+        # self.Cons_r_compl_bound     = pyo.Constraint(self.T, self.L, rule=aux.r_compl_bound)
+        # self.Cons_s_compl_bound     = pyo.Constraint(self.T, self.L, rule=aux.s_compl_bound)
 
     def __build_objective(self):
         self.Objective_Cost = pyo.Objective(rule=aux.cost_ALR_site, sense=pyo.minimize) 

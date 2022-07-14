@@ -90,6 +90,7 @@ def update_the_duals(locations_instance, portfolio_instance):
         new_dualsT[t-1] =  pyo.value(locations_instance.dual[t]) + pyo.value(locations_instance.dualgamma[t])*primal_residual
 
         ###NOTE -- Project duals -- ist that a thing still???  -----
+        # new_dualsT = project_dual(new_dualsT, portfolio_instance)
         
         #Update the new dual and in locations_instance and portfolio_instance.
         locations_instance.dual[t] = new_dualsT[t-1] #just a misalignment between pyomo iterator and numpy iterator
@@ -111,9 +112,10 @@ def calculate_obj_cost(locations_instance, portfolio_instance):
 
     augmentation_value = sum((pyo.value(mP.dualgamma[t])/2)*((pyo.value(mP.commitment_i[t])+pyo.value(mP.i_G[t])+sum(pyo.value(mL.e_S[t,l]) for l in mL.L) - pyo.value(mP.commitment_e[t]) - pyo.value(mP.e_G[t]) - sum(pyo.value(mL.i_S[t,l]) for l in mL.L))**2) for t in mP.T)
     
+    
+    minimization_objective = objective_cost_original + dualized_constraint_value + augmentation_value
 
-
-    return objective_cost_original, dualized_constraint_value, augmentation_value
+    return objective_cost_original, dualized_constraint_value, augmentation_value, minimization_objective
     
     
 def calculate_dualized_violation(m):
@@ -125,3 +127,17 @@ def calculate_dualized_violation(m):
     # violation = sum(pyo.value(m.commitment_i[t])+pyo.value(m.i_G[t])+sum(pyo.value(m.e_S[t,l]) for l in m.L) - pyo.value(m.commitment_e[t]) - pyo.value(m.e_G[t]) - sum(pyo.value(m.i_S[t,l]) for l in m.L) for t in m.T)
 
     return violationT
+
+
+def project_dual(dualsT, portfolio_instance):
+    """
+    Documentation: Project dual multipliers outside the interval [-import price, -export price] back into this interval
+    """
+    for t in portfolio_instance.T:
+        if dualsT[t-1] < -pyo.value(portfolio_instance.price_import[t]):
+            dualsT[t-1] = -pyo.value(portfolio_instance.price_import[t])
+            print("DONE")
+        elif dualsT[t-1] > -pyo.value(portfolio_instance.price_export[t]):
+            dualsT[t-1] = -pyo.value(portfolio_instance.price_export[t])
+            print("BOOM")
+    return dualsT

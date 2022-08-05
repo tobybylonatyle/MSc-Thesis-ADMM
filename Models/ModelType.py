@@ -11,4 +11,4 @@ class ModelType(Enum):
     LR = 6 #Lagrangian relaxationof energy balance portfolio constraint
     ALR_Portfolio = 7
     ALR_Site = 8
-    LocationsModels = 9
+    LocationsModels = 9 # Exchange ADMM Model for each site

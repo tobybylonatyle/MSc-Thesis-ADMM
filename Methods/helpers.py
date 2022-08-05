@@ -1,4 +1,5 @@
 import pyomo.environ as pyo
+from Models.LocationsModel import LocationsModel
 from Models.ModelType import ModelType
 from Models.LPModel import LPModel
 from Models.MILPModel import MILPModel
@@ -23,6 +24,8 @@ def build_model(formulation):
         m = SiteModel(type=ModelType.ALR_Site)
     if formulation == "PortfolioModel":
         m = PortfolioModel(type=ModelType.ALR_Portfolio)
+    if formulation == "LocationsModel":
+        m = LocationsModel(type=ModelType.LocationsModels)
     return m
 
 
@@ -54,13 +57,20 @@ def feed_to_portfolio(portfolio_instnace, exports_S_TL, imports_S_TL):
 
 
 def extract_from_portfolio(portfolio_instance):
-    exports_G_T = []
-    imports_G_T = []
+    exports_G_T = np.zeros(int(pyo.value(portfolio_instance.N_t)))
+    imports_G_T = np.zeros(int(pyo.value(portfolio_instance.N_t)))
 
     for t in portfolio_instance.T:
-        exports_G_T.append(pyo.value(portfolio_instance.e_G[t]))
-        imports_G_T.append(pyo.value(portfolio_instance.i_G[t]))
+        exports_G_T[t-1] = pyo.value(portfolio_instance.e_G[t])
+        imports_G_T[t-1] = pyo.value(portfolio_instance.i_G[t])
+        
 
+    # print(exports_G_T)
+    # print(imports_G_T)
+    # print(pyo.value(portfolio_instance.Objective_Cost))
+    # print(sum(pyo.value(portfolio_instance.dual[t])*(pyo.value(portfolio_instance.commitment_i[t]) - pyo.value(portfolio_instance.commitment_e[t])) for t in portfolio_instance.T))
+    # print(sum(calculate_dualized_violation(portfolio_instance)))
+    # print('hi')
     return exports_G_T, imports_G_T
 
 
@@ -84,17 +94,25 @@ def update_the_duals(locations_instance, portfolio_instance):
                             - pyo.value(portfolio_instance.e_G[t]) \
                             - sum(pyo.value(locations_instance.i_S[t,l]) for l in locations_instance.L)
         
-
+        a = pyo.value(portfolio_instance.commitment_i[t])
+        b = pyo.value(portfolio_instance.i_G[t])
+        c = sum(pyo.value(locations_instance.e_S[t,l]) for l in locations_instance.L)
+        d = pyo.value(portfolio_instance.commitment_e[t])
+        e = pyo.value(portfolio_instance.e_G[t])
+        f = sum(pyo.value(locations_instance.i_S[t,l]) for l in locations_instance.L)
         primal_residualsT[t-1] = primal_residual
         dualgammasT[t-1] = pyo.value(locations_instance.dualgamma[t])
         new_dualsT[t-1] =  pyo.value(locations_instance.dual[t]) + pyo.value(locations_instance.dualgamma[t])*primal_residual
 
+        
         ###NOTE -- Project duals -- ist that a thing still???  -----
-        # new_dualsT = project_dual(new_dualsT, portfolio_instance)
+        #new_dualsT = project_dual(new_dualsT, portfolio_instance)
         
         #Update the new dual and in locations_instance and portfolio_instance.
         locations_instance.dual[t] = new_dualsT[t-1] #just a misalignment between pyomo iterator and numpy iterator
         portfolio_instance.dual[t] = new_dualsT[t-1]
+    
+    # print(primal_residualsT)
 
     return locations_instance, portfolio_instance, new_dualsT, primal_residualsT, dualgammasT
 
@@ -136,8 +154,48 @@ def project_dual(dualsT, portfolio_instance):
     for t in portfolio_instance.T:
         if dualsT[t-1] < -pyo.value(portfolio_instance.price_import[t]):
             dualsT[t-1] = -pyo.value(portfolio_instance.price_import[t])
-            print("DONE")
+            #print("DONE")
         elif dualsT[t-1] > -pyo.value(portfolio_instance.price_export[t]):
             dualsT[t-1] = -pyo.value(portfolio_instance.price_export[t])
-            print("BOOM")
+            #print("BOOM")
     return dualsT
+
+def extract_solution(locations_instance, portfolio_instance):
+    exports_G_T, imports_G_T = extract_from_portfolio(portfolio_instance)
+    exports_S_TL, imports_S_TL = extract_from_locations(locations_instance)
+
+    solution ={'e_G': exports_G_T, 'i_G': imports_G_T, 'e_S': exports_S_TL, 'i_S': imports_S_TL }
+    return solution
+
+def ExchangeUpdateDuals(location_instances):
+    new_dualsT = np.zeros(int(pyo.value(location_instances[0].N_t)))
+    
+    for t in location_instances[0].T:
+
+       
+        
+        new_dualsT[t-1] = pyo.value(location_instances[0].dual[t]) + pyo.value(location_instances[0].dualgamma[t])*()
+
+
+def extract_from_non_decomposed(instance):
+    exports_G_T = np.zeros(int(pyo.value(instance.N_t)))
+    imports_G_T = np.zeros(int(pyo.value(instance.N_t)))
+
+    for t in instance.T:
+        exports_G_T[t-1] = pyo.value(instance.e_G[t])
+        imports_G_T[t-1] = pyo.value(instance.i_G[t])
+
+
+    exports_S_TL = np.zeros((int(pyo.value(instance.N_t)), int(pyo.value(instance.N_l))))
+    imports_S_TL = np.zeros((int(pyo.value(instance.N_t)), int(pyo.value(instance.N_l))))
+    for t in instance.T:
+        for l in instance.L:
+
+            if pyo.value(instance.e_S[t,l]) < 0: #BUG prevention
+                exports_S_TL[t-1,l-1] = max(0,pyo.value(instance.e_S[t,l])) #BUG somtimes this NonNegativeReal is negative (-1E-8)... huh
+                print("BUG")
+
+            exports_S_TL[t-1,l-1] = pyo.value(instance.e_S[t,l])
+            imports_S_TL[t-1,l-1] = pyo.value(instance.i_S[t,l])
+    
+    return exports_G_T, imports_G_T, exports_S_TL, imports_S_TL

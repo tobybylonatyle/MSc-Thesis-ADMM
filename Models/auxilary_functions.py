@@ -7,21 +7,15 @@ Auxiliary module of package 'Build' with functions which define the objective an
 import numpy as np
 import pyomo.environ as pyo
 
-
+def cost_ALR_location(m):
+    cost_DUoS_import   = sum((m.DUoS_import[t,l]  - m.dual[t]) * m.i_S[t,l] for t in m.T for l in m.L)
+    cost_DUoS_export   = sum((m.DUoS_export[t,l]  + m.dual[t]) * m.e_S[t,l] for t in m.T for l in m.L)
+    homerun = sum((m.dualgamma[t]/2)*((m.commitment_i[t] + m.i_G[t] + sum(m.e_S_prime[t,l] for l in m.L_prime) + sum(m.e_S[t,l] for l in m.L) - m.commitment_e[t] - m.e_G[t] - sum(m.i_S_prime[t,l] for l in m.L_prime) - sum(m.i_S[t,l] for l in m.L))**2) for t in m.T)
+    return cost_DUoS_export + cost_DUoS_import + homerun 
+    
 def cost_ALR_site(m):
     cost_DUoS_import   = sum((m.DUoS_import[t,l]  - m.dual[t]) * m.i_S[t,l] for t in m.T for l in m.L)
     cost_DUoS_export   = sum((m.DUoS_export[t,l]  + m.dual[t]) * m.e_S[t,l] for t in m.T for l in m.L)
-
-
-
-    monster1 =  sum( m.commitment_i[t]*(m.commitment_i[t] + m.i_G[t] + sum(m.e_S[t,l] for l in m.L) - m.commitment_e[t] - m.e_G[t] - sum(m.i_S[t,l] for l in m.L)) for t in m.T )
-    monster2 =  sum( m.i_G[t]*(m.commitment_i[t] + m.i_G[t] + sum(m.e_S[t,l] for l in m.L) - m.commitment_e[t] - m.e_G[t] - sum(m.i_S[t,l] for l in m.L)) for t in m.T )
-    monster3 =  sum( sum(m.e_S[t,l] for l in m.L)*(m.commitment_i[t] + m.i_G[t] + sum(m.e_S[t,l] for l in m.L) - m.commitment_e[t] - m.e_G[t] - sum(m.i_S[t,l] for l in m.L)) for t in m.T )
-    monster4 = sum( - m.commitment_e[t]*(m.commitment_i[t] + m.i_G[t] + sum(m.e_S[t,l] for l in m.L) - m.commitment_e[t] - m.e_G[t] - sum(m.i_S[t,l] for l in m.L)) for t in m.T )
-    monster5 = sum(  - m.e_G[t]*(m.commitment_i[t] + m.i_G[t] + sum(m.e_S[t,l] for l in m.L) - m.commitment_e[t] - m.e_G[t] - sum(m.i_S[t,l] for l in m.L)) for t in m.T )
-    monster6 = sum(  - sum(m.i_S[t,l] for l in m.L)*(m.commitment_i[t] + m.i_G[t] + sum(m.e_S[t,l] for l in m.L) - m.commitment_e[t] - m.e_G[t] - sum(m.i_S[t,l] for l in m.L)) for t in m.T )
-    monsters = monster1 + monster2 + monster3 + monster4 + monster5 + monster6
-    augmentation = (sum(m.dualgamma[t] for t in m.T)/2)*monsters
 
     homerun = sum((m.dualgamma[t]/2)*((m.commitment_i[t] + m.i_G[t] + sum(m.e_S[t,l] for l in m.L) - m.commitment_e[t] - m.e_G[t] - sum(m.i_S[t,l] for l in m.L))**2) for t in m.T)
     
@@ -32,28 +26,9 @@ def cost_ALR_portfolio(m):
     cost_import_grid    = sum((m.price_import[t] + m.dual[t]) * m.i_G[t] for t in m.T)
     profit_export_grid  = sum((m.price_export[t] - m.dual[t]) * m.e_G[t] for t in m.T)
     commitment_constant = sum(m.dual[t] * (m.commitment_i[t] - m.commitment_e[t]) for t in m.T)
-    
-    #  THIS is probably wrong!!!! definitely . should be thr ssquare of this..
-    # augmentation = sum((m.dualgamma[t]/2)*(m.commitment_i[t] + m.i_G[t] + sum(m.e_S[t,l] for l in m.L) \
-    #                                              - m.commitment_e[t] - m.e_G[t] - sum(m.i_S[t,l] for l in m.L)) for t in m.T)
-
-    monster1 =  sum( m.commitment_i[t]*(m.commitment_i[t] + m.i_G[t] + sum(m.e_S[t,l] for l in m.L) - m.commitment_e[t] - m.e_G[t] - sum(m.i_S[t,l] for l in m.L)) for t in m.T )
-    monster2 =  sum( m.i_G[t]*(m.commitment_i[t] + m.i_G[t] + sum(m.e_S[t,l] for l in m.L) - m.commitment_e[t] - m.e_G[t] - sum(m.i_S[t,l] for l in m.L)) for t in m.T )
-    monster3 =  sum( sum(m.e_S[t,l] for l in m.L)*(m.commitment_i[t] + m.i_G[t] + sum(m.e_S[t,l] for l in m.L) - m.commitment_e[t] - m.e_G[t] - sum(m.i_S[t,l] for l in m.L)) for t in m.T )
-    monster4 = sum( - m.commitment_e[t]*(m.commitment_i[t] + m.i_G[t] + sum(m.e_S[t,l] for l in m.L) - m.commitment_e[t] - m.e_G[t] - sum(m.i_S[t,l] for l in m.L)) for t in m.T )
-    monster5 = sum(- m.e_G[t]*(m.commitment_i[t] + m.i_G[t] + sum(m.e_S[t,l] for l in m.L) - m.commitment_e[t] - m.e_G[t] - sum(m.i_S[t,l] for l in m.L)) for t in m.T )
-    monster6 = sum( - sum(m.i_S[t,l] for l in m.L)*(m.commitment_i[t] + m.i_G[t] + sum(m.e_S[t,l] for l in m.L) - m.commitment_e[t] - m.e_G[t] - sum(m.i_S[t,l] for l in m.L)) for t in m.T )
-    monsters = monster1 + monster2 + monster3 + monster4 + monster5 + monster6
-
-    augmentation = (sum(m.dualgamma[t] for t in m.T)/2)*monsters
-
-    # TODO PUT THE DUAL GAMMA BACK IN THE MONSTER... FOR BOTH PROTFOLIO AND SITE 
-
     homerun = sum((m.dualgamma[t]/2)*((m.commitment_i[t] + m.i_G[t] + sum(m.e_S[t,l] for l in m.L) - m.commitment_e[t] - m.e_G[t] - sum(m.i_S[t,l] for l in m.L))**2) for t in m.T)
     
     return cost_import_grid - profit_export_grid + commitment_constant + homerun 
-
-
 
 def cost_LR(m):
     cost_DUoS_export   = sum(m.DUoS_export[t,l] * m.e_S[t,l] for t in m.T for l in m.L)
@@ -67,32 +42,6 @@ def cost_LR(m):
     lagrangian_part = sum((m.dual[t](m.commitment_i[t] + m.i_G[t] + sum(m.e_S[t,l] for l in m.L) - m.commitment_e[t] - m.e_G[t] - sum(m.i_S[t,l] for l in m.L)) for t in m.T))
 
     return standard_objective + lagrangian_part
-
-
-    # supply = m.commitment_i[t] + m.i_G[t] + sum(m.e_S[t,l] for l in m.L)
-    # demand = m.commitment_e[t] + m.e_G[t] + sum(m.i_S[t,l] for l in m.L)
-    # return supply - demand >= 0
-
-    
-def cost_ALR(m):
-    cost_DUoS_export   = sum(m.DUoS_export[t,l] * m.e_S[t,l] for t in m.T for l in m.L)
-    cost_DUoS_import   = sum(m.DUoS_import[t,l] * m.i_S[t,l] for t in m.T for l in m.L)
-    
-
-    cost_import_grid   = sum(m.price_import[t] * m.i_G[t] for t in m.T)
-    profit_export_grid = sum(m.price_export[t] * m.e_G[t] for t in m.T)
-
-    standard_objective = cost_DUoS_export + cost_DUoS_import + cost_import_grid - profit_export_grid
-
-    lagrangian_part = sum((m.dual[t](m.commitment_i[t] + m.i_G[t] + sum(m.e_S[t,l] for l in m.L) - m.commitment_e[t] - m.e_G[t] - sum(m.i_S[t,l] for l in m.L)) for t in m.T))
-
-    
-    # cool_part = sum(((m.dualgamma[t]/2) *(THE L2 NORM THING)  for t in m.T))
-    cool_part = pyo.value(m.commitment_i[1]) + pyo.value(m.i_G[1]) + sum(pyo.value(m.e_S[1,l]) for l in m.L) \
-     - pyo.value(m.commitment_e[1]) - pyo.value(m.e_G[1]) - sum(pyo.value(m.i_S[1,l]) for l in m.L)
-
-    return standard_objective + lagrangian_part + cool_part
-
 
 
 def cost(m):
@@ -202,3 +151,16 @@ def e_compl_bound(m,t):
     '''Grid Export Complementarity Bound'''
     big_M = m.commitment_i[t] - m.commitment_e[t] + sum(m.grid_limit[t,l] for l in m.L)
     return m.e_G[t] <= (1-m.gamma[t]) * big_M
+
+def i_compl_bound_relax(m,t):
+    '''Grid Import Complementarity Bound'''
+    big_M = m.commitment_e[t] - m.commitment_i[t] + sum(m.grid_limit[t,l] for l in m.L)
+    return m.i_G[t] <=  big_M
+
+def e_compl_bound_relax(m,t):
+    '''Grid Export Complementarity Bound'''
+    big_M = m.commitment_i[t] - m.commitment_e[t] + sum(m.grid_limit[t,l] for l in m.L)
+    return m.e_G[t] <=  big_M
+
+def grid_connect_limit_raf(m,t):
+    return m.i_G[t] + m.e_G[t] <= sum(m.grid_limit[t,l] for l in m.L)

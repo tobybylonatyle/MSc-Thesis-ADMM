@@ -81,7 +81,7 @@ class PortfolioModel(pyo.AbstractModel):
 
 
 
-        self.gamma = pyo.Var(self.T, within=pyo.Binary) # Binary for export/import complementarity
+        # self.gamma = pyo.Var(self.T, within=pyo.Binary) # Binary for export/import complementarity
         # self.z     = pyo.Var(self.T, self.LB, within=pyo.Binary) # Binary for charging/discharging complementarity
         # self.delta = pyo.Var(self.T, self.L, within=pyo.Binary)  # Binary for send/receive complementarity
 
@@ -99,11 +99,15 @@ class PortfolioModel(pyo.AbstractModel):
         # self.Cons_balance_site       = pyo.Constraint(self.T, self.L, rule=aux.energy_balance_site)
 
         #Inactive since it was relaxed
-        # self.Cons_balance_portfolio  = pyo.Constraint(self.T, rule=aux.energy_balance_portfolio)
+        #self.Cons_balance_portfolio  = pyo.Constraint(self.T, rule=aux.energy_balance_portfolio)
 
-        self.Cons_i_compl_bound     = pyo.Constraint(self.T, rule=aux.i_compl_bound)
-        self.Cons_e_compl_bound     = pyo.Constraint(self.T, rule=aux.e_compl_bound)
+        # self.Cons_i_compl_bound     = pyo.Constraint(self.T, rule=aux.i_compl_bound)
+        # self.Cons_e_compl_bound     = pyo.Constraint(self.T, rule=aux.e_compl_bound)
+
         # self.Cons_i_e_compl         = pyo.Constraint(self.T, rule=aux.i_e_compl)
+        self.Cons_i_compl_bound_relax = pyo.Constraint(self.T, rule=aux.i_compl_bound_relax)
+        self.Cons_e_compl_bound_relax = pyo.Constraint(self.T, rule=aux.e_compl_bound_relax)
+        self.Cons_grid_connect_limit_raf = pyo.Constraint(self.T, rule= aux.grid_connect_limit_raf)
 
     def __build_objective(self):
         self.Objective_Cost = pyo.Objective(rule=aux.cost_ALR_portfolio, sense=pyo.minimize) 

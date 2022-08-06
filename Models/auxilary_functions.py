@@ -7,6 +7,21 @@ Auxiliary module of package 'Build' with functions which define the objective an
 import numpy as np
 import pyomo.environ as pyo
 
+def cost_ALR_full(m):
+    cost_import_grid   = sum(m.price_import[t] * m.i_G[t] for t in m.T)
+    profit_export_grid = sum(m.price_export[t] * m.e_G[t] for t in m.T)
+    total_grid         = cost_import_grid - profit_export_grid
+
+    cost_DUoS_import   = sum(m.DUoS_import[t,l] * m.i_S[t,l] for t in m.T for l in m.L)
+    cost_DUoS_export   = sum(m.DUoS_export[t,l] * m.e_S[t,l] for t in m.T for l in m.L)
+    total_DUoS         = cost_DUoS_import + cost_DUoS_export
+
+    dualized_constraint = sum(m.dual[t]*(m.commitment_i[t] + m.i_G[t] + sum(m.e_S[t,l] for l in m.L) - m.commitment_e[t] - m.e_G[t] - sum(m.i_S[t,l] for l in m.L)) for t in m.T)
+    augmentation = sum((m.dualgamma[t]/2)*((m.commitment_i[t] + m.i_G[t] + sum(m.e_S[t,l] for l in m.L) - m.commitment_e[t] - m.e_G[t] - sum(m.i_S[t,l] for l in m.L))**2) for t in m.T)
+    
+    return total_grid + total_DUoS  + augmentation + dualized_constraint
+
+
 def cost_ALR_location(m):
     cost_DUoS_export   = sum((m.DUoS_export[t,l]  + m.dual[t]) * m.e_S[t,l] for t in m.T for l in m.L)
     cost_DUoS_import   = sum((m.DUoS_import[t,l]  - m.dual[t]) * m.i_S[t,l] for t in m.T for l in m.L)

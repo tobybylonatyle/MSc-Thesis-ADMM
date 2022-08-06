@@ -28,7 +28,7 @@ def solve_MILP():
     exports_G_T, imports_G_T, exports_S_TL, imports_S_TL = helpers.extract_from_non_decomposed(instance)
     decision_vars[0] = {'e_G': exports_G_T, 'i_G': imports_G_T, 'e_S': exports_S_TL, 'i_S': imports_S_TL }
 
-    return decision_vars
+    return decision_vars, instance, result
 
 def solve_LP():
     print("> Solving LP")
@@ -48,7 +48,26 @@ def solve_LP():
     exports_G_T, imports_G_T, exports_S_TL, imports_S_TL = helpers.extract_from_non_decomposed(instance)
     decision_vars[0] = {'e_G': exports_G_T, 'i_G': imports_G_T, 'e_S': exports_S_TL, 'i_S': imports_S_TL }
 
-    return decision_vars
+    return decision_vars, instance, result
+
+def solve_ALR():
+    print("> Solving ALR")
+    solver = helpers.build_solver('gurobi')
+    model = helpers.build_model('ALRModel')
+
+    instance = model.build_instance(instance_size=2, equal_prices=False)
+
+    start_time = time.perf_counter()
+    result = solver.solve(instance)
+    print(time.perf_counter()- start_time)
+
+    print(pyo.value(instance.Objective_Cost))
+
+    decision_vars ={}
+    exports_G_T, imports_G_T, exports_S_TL, imports_S_TL = helpers.extract_from_non_decomposed(instance)
+    decision_vars[0] = {'e_G': exports_G_T, 'i_G': imports_G_T, 'e_S': exports_S_TL, 'i_S': imports_S_TL }
+
+    return decision_vars, instance, result
 
 def solve_ADMM():
     print("> Solving ADMM")
@@ -121,7 +140,7 @@ def solve_ADMM():
 
     computational_data['dualsT'] = np.stack(computational_data['dualsT'],axis=0)
     computational_data['primal_residualsT'] = np.stack(computational_data['primal_residualsT'],axis=0)
-    return location_instances, exports_S_TL, imports_S_TL, charge_TBL, discharge_TBL, i_G, e_G, new_dualsT, computational_data, decision_vars
+    return location_instances, computational_data, decision_vars
 
     
 def solve_RFL():
@@ -136,9 +155,9 @@ def solve_RFL():
     #IDEA: Use persitant solver for better perforamnce
 
 
-    computational_data = {'obj_cost': [], 'dualized_constraint_value' : [], 'augmentation_value': [], 'dualsT': [], 'primal_residualsT': [], 'dualgammasT' : [], 'min_obj' :[] }
-
+    computational_data = {'obj_cost': [], 'dualized_constraint_value' : [], 'augmentation_value': [], 'dualsT': [], 'primal_residualsT': [], 'dualgammasT' : [], 'min_obj' :[], 'obj_cost_locations' :[], 'obj_cost_portfolio' :[] }
     decision_vars = {}
+
     print(" > Solving RFL")
     solver = helpers.build_solver(SOLVER_NAME)
 
@@ -150,23 +169,27 @@ def solve_RFL():
 
     # Intialize for the very first solve 
     for t in locations_instance.T:
-        # locations_instance.dual[t] = 2000 #Do not initialize, they have to be within the optimal window
-        locations_instance.dualgamma[t] = 5 # Fixed dualgamma for now
+        locations_instance.dual[t] = 0 #Do not initialize, they have to be within the optimal window
+        locations_instance.dualgamma[t] = 0.005 # Fixed dualgamma for now
         locations_instance.i_G[t] = 0
         locations_instance.e_G[t] = 0
 
     for t in portfolio_instance.T:
-        # portfolio_instance.dual[t] = 2000 #Do not initialize, they have to be within the optimal window
-        portfolio_instance.dualgamma[t] = 5
+        portfolio_instance.dual[t] = 0 #Do not initialize, they have to be within the optimal window
+        portfolio_instance.dualgamma[t] = 0.005
+        for l in portfolio_instance.L:
+            portfolio_instance.i_S[t,l] = 0
+            portfolio_instance.e_S[t,l] = 0
 
     iter = 0
-    objective_cost_original, dualized_constraint_value, augmentation_value, min_obj = 0,0,0,0
+    objective_cost_original, dualized_constraint_value, augmentation_value, min_obj,  obj_cost_locations, obj_cost_portfolio = 0,0,0,0,0,0
     primal_residualsT = np.zeros(int(pyo.value(locations_instance.N_t)))
     dualgammasT = np.zeros(int(pyo.value(locations_instance.N_t)))
     dualsT = np.zeros(int(pyo.value(locations_instance.N_t)))
     exports_G_T, imports_G_T = np.zeros(int(pyo.value(locations_instance.N_t))), np.zeros(int(pyo.value(locations_instance.N_t)))
     exports_S_TL, imports_S_TL = np.zeros((int(pyo.value(locations_instance.N_t)), int(pyo.value(locations_instance.N_l)))), np.zeros((int(pyo.value(locations_instance.N_t)), int(pyo.value(locations_instance.N_l))))
-
+    charge_TBL = np.zeros((int(pyo.value(locations_instance.N_t)), int(pyo.value(locations_instance.N_b_max)), int(pyo.value(locations_instance.N_l))))
+    discharge_TBL = np.zeros((int(pyo.value(locations_instance.N_t)), int(pyo.value(locations_instance.N_b_max)), int(pyo.value(locations_instance.N_l))))
 
     # SEQUENTIAL ADMM 
     while(iter < MAX_ITER):
@@ -176,23 +199,25 @@ def solve_RFL():
         computational_data['obj_cost'].append(objective_cost_original)
         computational_data['dualized_constraint_value'].append(dualized_constraint_value)
         computational_data['augmentation_value'].append(augmentation_value)
-        computational_data['dualsT'].append(dualsT)
+        computational_data['min_obj'].append(min_obj)
         computational_data['primal_residualsT'].append(primal_residualsT)
         computational_data['dualgammasT'].append(dualgammasT)
-        computational_data['min_obj'].append(min_obj)
+        computational_data['dualsT'].append(dualsT)
+        computational_data['obj_cost_locations'].append(obj_cost_locations)
+        computational_data['obj_cost_portfolio'].append(obj_cost_portfolio)
 
-        decision_vars[iter] = {'e_G': exports_G_T, 'i_G': imports_G_T, 'e_S': exports_S_TL, 'i_S': imports_S_TL }
+        decision_vars[iter] = {'e_G': exports_G_T, 'i_G': imports_G_T, 'e_S': exports_S_TL, 'i_S': imports_S_TL, 'charge_TBL': charge_TBL, 'discharge_TBL': discharge_TBL}
 
         
-        result_p                            = solver.solve(locations_instance) # Solve locations subproblem
-        exports_S_TL, imports_S_TL          = helpers.extract_from_locations(locations_instance) # Extract data from locations supbroblem 
-        portfolio_instance                  = helpers.feed_to_portfolio(portfolio_instance, exports_S_TL, imports_S_TL) # Feed locations subproblem data into portfolio subproblem
-        result_l                            = solver.solve(portfolio_instance) # Solve portfolio subproblem
-        exports_G_T, imports_G_T            = helpers.extract_from_portfolio(portfolio_instance) # Extract data from portfolio subproblem
-        locations_instance                  = helpers.feed_to_locations(locations_instance, exports_G_T, imports_G_T) # Feed portfolio subproblem data into locations subproblem
+        result_p                                                       = solver.solve(locations_instance) # Solve locations subproblem
+        exports_S_TL, imports_S_TL, charge_TBL, discharge_TBL          = helpers.extract_from_locations(locations_instance) # Extract data from locations supbroblem 
+        portfolio_instance                                             = helpers.feed_to_portfolio(portfolio_instance, exports_S_TL, imports_S_TL) # Feed locations subproblem data into portfolio subproblem
+        result_l                                                       = solver.solve(portfolio_instance) # Solve portfolio subproblem
+        exports_G_T, imports_G_T                                       = helpers.extract_from_portfolio(portfolio_instance) # Extract data from portfolio subproblem
+        locations_instance                                             = helpers.feed_to_locations(locations_instance, exports_G_T, imports_G_T) # Feed portfolio subproblem data into locations subproblem
         
         locations_instance, portfolio_instance, dualsT, primal_residualsT, dualgammasT    = helpers.update_the_duals(locations_instance, portfolio_instance) # Update the dual variables
-        objective_cost_original, dualized_constraint_value, augmentation_value, min_obj   = helpers.calculate_obj_cost(locations_instance, portfolio_instance)
+        objective_cost_original, dualized_constraint_value, augmentation_value, min_obj, obj_cost_locations, obj_cost_portfolio   = helpers.calculate_obj_cost(locations_instance, portfolio_instance)
      
 
         #TODO Termination Condition
@@ -208,13 +233,11 @@ def solve_RFL():
 
     return computational_data, portfolio_instance, locations_instance, decision_vars
 
-def solve_MSL():
-    """Parallel ADMM,  feed portolio_instance and locations_instance simulatniously, then """
-    pass 
-
 
 if __name__ == '__main__':
     # solve_LP()
     # solve_MILP()
     # solve_ADMM() # This is where each location is also a subproblem ie |L|+1 subproblems
-    solve_RFL() # Just two subproblems, one for portfolio, onr for locations:::: Sequentially 
+    # solve_RFL() # Just two subproblems, one for portfolio, onr for locations:::: Sequentially 
+    # solve_ALR()
+    pass

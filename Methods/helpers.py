@@ -5,6 +5,7 @@ from Models.LPModel import LPModel
 from Models.MILPModel import MILPModel
 from Models.SiteModel import SiteModel
 from Models.PortfolioModel import PortfolioModel
+from Models.ALRModel import ALRModel
 import numpy as np
 from pyomo.environ import value as val
 
@@ -26,6 +27,8 @@ def build_model(formulation):
         m = PortfolioModel(type=ModelType.ALR_Portfolio)
     if formulation == "LocationsModel":
         m = LocationsModel(type=ModelType.LocationsModels)
+    if formulation == "ALRModel":
+        m = ALRModel(type=ModelType.ALR)
     return m
 
 
@@ -33,6 +36,9 @@ def extract_from_locations(location_instance):
     """Given a solved location_instance, the function extracts the necessary information to be fed into the portfolio subproblem before solving"""
     exports_S_TL = np.zeros((int(pyo.value(location_instance.N_t)), int(pyo.value(location_instance.N_l))))
     imports_S_TL = np.zeros((int(pyo.value(location_instance.N_t)), int(pyo.value(location_instance.N_l))))
+    charge_TBL = np.zeros((int(pyo.value(location_instance.N_t)), int(pyo.value(location_instance.N_b_max)), int(pyo.value(location_instance.N_l))))
+    discharge_TBL = np.zeros((int(pyo.value(location_instance.N_t)), int(pyo.value(location_instance.N_b_max)), int(pyo.value(location_instance.N_l))))
+    
     for t in location_instance.T:
         for l in location_instance.L:
 
@@ -42,8 +48,13 @@ def extract_from_locations(location_instance):
 
             exports_S_TL[t-1,l-1] = pyo.value(location_instance.e_S[t,l])
             imports_S_TL[t-1,l-1] = pyo.value(location_instance.i_S[t,l])
+
+
+            for b in location_instance.B_max:
+                charge_TBL[t-1,b-1,l-1] = pyo.value(location_instance.c[t,l,b])
+                discharge_TBL[t-1,b-1,l-1] = pyo.value(location_instance.d[t,l,b])
     
-    return exports_S_TL, imports_S_TL
+    return exports_S_TL, imports_S_TL, charge_TBL, discharge_TBL
 
 
 def feed_to_portfolio(portfolio_instnace, exports_S_TL, imports_S_TL):
@@ -94,12 +105,12 @@ def update_the_duals(locations_instance, portfolio_instance):
                             - pyo.value(portfolio_instance.e_G[t]) \
                             - sum(pyo.value(locations_instance.i_S[t,l]) for l in locations_instance.L)
         
-        a = pyo.value(portfolio_instance.commitment_i[t])
-        b = pyo.value(portfolio_instance.i_G[t])
-        c = sum(pyo.value(locations_instance.e_S[t,l]) for l in locations_instance.L)
-        d = pyo.value(portfolio_instance.commitment_e[t])
-        e = pyo.value(portfolio_instance.e_G[t])
-        f = sum(pyo.value(locations_instance.i_S[t,l]) for l in locations_instance.L)
+        # a = pyo.value(portfolio_instance.commitment_i[t])
+        # b = pyo.value(portfolio_instance.i_G[t])
+        # c = sum(pyo.value(locations_instance.e_S[t,l]) for l in locations_instance.L)
+        # d = pyo.value(portfolio_instance.commitment_e[t])
+        # e = pyo.value(portfolio_instance.e_G[t])
+        # f = sum(pyo.value(locations_instance.i_S[t,l]) for l in locations_instance.L)
         primal_residualsT[t-1] = primal_residual
         dualgammasT[t-1] = pyo.value(locations_instance.dualgamma[t])
         new_dualsT[t-1] =  pyo.value(locations_instance.dual[t]) + pyo.value(locations_instance.dualgamma[t])*primal_residual
@@ -112,7 +123,6 @@ def update_the_duals(locations_instance, portfolio_instance):
         locations_instance.dual[t] = new_dualsT[t-1] #just a misalignment between pyomo iterator and numpy iterator
         portfolio_instance.dual[t] = new_dualsT[t-1]
     
-    # print(primal_residualsT)
 
     return locations_instance, portfolio_instance, new_dualsT, primal_residualsT, dualgammasT
 
@@ -133,7 +143,10 @@ def calculate_obj_cost(locations_instance, portfolio_instance):
     
     minimization_objective = objective_cost_original + dualized_constraint_value + augmentation_value
 
-    return objective_cost_original, dualized_constraint_value, augmentation_value, minimization_objective
+    obj_cost_locations = pyo.value(mL.Objective_Cost)
+    obj_cost_portfolio = pyo.value(mP.Objective_Cost)
+
+    return objective_cost_original, dualized_constraint_value, augmentation_value, minimization_objective, obj_cost_locations, obj_cost_portfolio
     
     
 def calculate_dualized_violation(m):
@@ -254,3 +267,5 @@ def feasibility_heuristic(inst,  exports_S_TL, imports_S_TL):
 
 
     return i_G, e_G
+
+

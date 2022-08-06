@@ -66,6 +66,7 @@ class ALRModel(pyo.AbstractModel):
       
     def __build_variables(self):
         '''defines and builds all variables of the model'''
+       
 
         self.e_G   = pyo.Var(self.T, within=pyo.NonNegativeReals) # Export to grid
         self.i_G   = pyo.Var(self.T, within=pyo.NonNegativeReals) # Import from grid
@@ -97,7 +98,7 @@ class ALRModel(pyo.AbstractModel):
         self.Cons_balance_site       = pyo.Constraint(self.T, self.L, rule=aux.energy_balance_site)
 
    
-        self.Cons_balance_portfolio  = pyo.Constraint(self.T, rule=aux.energy_balance_portfolio)
+        # self.Cons_balance_portfolio  = pyo.Constraint(self.T, rule=aux.energy_balance_portfolio)
 
         self.Cons_i_compl_bound     = pyo.Constraint(self.T, rule=aux.i_compl_bound)
         self.Cons_e_compl_bound     = pyo.Constraint(self.T, rule=aux.e_compl_bound)

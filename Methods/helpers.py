@@ -167,14 +167,28 @@ def extract_solution(locations_instance, portfolio_instance):
     solution ={'e_G': exports_G_T, 'i_G': imports_G_T, 'e_S': exports_S_TL, 'i_S': imports_S_TL }
     return solution
 
-def ExchangeUpdateDuals(location_instances):
+def ExchangeUpdateDuals(location_instances, i_G, e_G, imports_S_TL, exports_S_TL):
     new_dualsT = np.zeros(int(pyo.value(location_instances[0].N_t)))
+    primal_residualsT = np.zeros(int(pyo.value(location_instances[0].N_t)))
     
-    for t in location_instances[0].T:
+    m = location_instances[0]
+    for t in m.T:
+        primal_residualsT[t-1] = (pyo.value(m.commitment_i[t]) + i_G[t-1] + sum(exports_S_TL[t-1,l-1] for l in m.L) - pyo.value(m.commitment_e[t]) - e_G[t-1] - sum(imports_S_TL[t-1,l-1] for l in m.L))
+        new_dualsT[t-1] = pyo.value(m.dual[t]) + pyo.value(m.dualgamma[t])*primal_residualsT[t-1]
+   
 
-       
-        
-        new_dualsT[t-1] = pyo.value(location_instances[0].dual[t]) + pyo.value(location_instances[0].dualgamma[t])*()
+    for l in range(len(location_instances)):
+        for t in m.T:
+            location_instances[l].dual[t] = new_dualsT[t-1]
+
+            for l_prime in location_instances[l].L_prime:
+                location_instances[l].e_S_prime[t,l_prime] = exports_S_TL[t-1,l_prime-1]
+                location_instances[l].i_S_prime[t,l_prime] = imports_S_TL[t-1,l_prime-1]
+                location_instances[l].e_G[t] = e_G[t-1]
+                location_instances[l].i_G[t] = i_G[t-1]
+
+    return new_dualsT, location_instances, primal_residualsT
+
 
 
 def extract_from_non_decomposed(instance):
@@ -199,3 +213,44 @@ def extract_from_non_decomposed(instance):
             imports_S_TL[t-1,l-1] = pyo.value(instance.i_S[t,l])
     
     return exports_G_T, imports_G_T, exports_S_TL, imports_S_TL
+       
+
+
+def extract_from_exchange_ADMM(location_instances):
+    exports_S_TL =  np.zeros((int(pyo.value(location_instances[0].N_t)), int(pyo.value(location_instances[0].N_l_prime))))
+    imports_S_TL = np.zeros((int(pyo.value(location_instances[0].N_t)), int(pyo.value(location_instances[0].N_l_prime))))
+    charge_TBL = np.zeros((int(pyo.value(location_instances[0].N_t)), int(pyo.value(location_instances[0].N_b_max)), int(pyo.value(location_instances[0].N_l_prime))))
+    discharge_TBL = np.zeros((int(pyo.value(location_instances[0].N_t)), int(pyo.value(location_instances[0].N_b_max)), int(pyo.value(location_instances[0].N_l_prime))))
+    
+    for l in range(len(location_instances)):
+        l_prime = pyo.value(location_instances[l].N_l)
+        for t in location_instances[l].T:
+            exports_S_TL[t-1,l] = pyo.value(location_instances[l].e_S[t,l_prime])
+            imports_S_TL[t-1,l] = pyo.value(location_instances[l].i_S[t,l_prime])
+
+            for b in location_instances[l].B_max:
+                charge_TBL[t-1,b-1,l] = pyo.value(location_instances[l].c[t,l_prime,b])
+                discharge_TBL[t-1,b-1,l] = pyo.value(location_instances[l].d[t,l_prime,b])
+
+    return exports_S_TL, imports_S_TL, charge_TBL, discharge_TBL
+
+
+def feasibility_heuristic(inst,  exports_S_TL, imports_S_TL):
+    i_G = np.zeros(int(pyo.value(inst.N_t)))
+    e_G = np.zeros(int(pyo.value(inst.N_t)))
+
+    # Heuristic Procedure to compute portfolio variables
+    for t in inst.T:
+        f = inst.commitment_e[t] - inst.commitment_i[t]\
+            + sum(imports_S_TL[t-1,l] for l in range(imports_S_TL.shape[1]) ) \
+            - sum(exports_S_TL[t-1,l] for l in range(exports_S_TL.shape[1]) )
+
+                        #  + sum(pyo.value(inst.i_S[t,l])for l in inst.L)\
+            #  - sum(pyo.value(inst.e_S[t,l])for l in inst.L)
+        
+
+        i_G[t-1] = max(f,0)
+        e_G[t-1] = max(-f,0)
+
+
+    return i_G, e_G

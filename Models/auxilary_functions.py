@@ -8,8 +8,9 @@ import numpy as np
 import pyomo.environ as pyo
 
 def cost_ALR_location(m):
-    cost_DUoS_import   = sum((m.DUoS_import[t,l]  - m.dual[t]) * m.i_S[t,l] for t in m.T for l in m.L)
     cost_DUoS_export   = sum((m.DUoS_export[t,l]  + m.dual[t]) * m.e_S[t,l] for t in m.T for l in m.L)
+    cost_DUoS_import   = sum((m.DUoS_import[t,l]  - m.dual[t]) * m.i_S[t,l] for t in m.T for l in m.L)
+
     homerun = sum((m.dualgamma[t]/2)*((m.commitment_i[t] + m.i_G[t] + sum(m.e_S_prime[t,l] for l in m.L_prime) + sum(m.e_S[t,l] for l in m.L) - m.commitment_e[t] - m.e_G[t] - sum(m.i_S_prime[t,l] for l in m.L_prime) - sum(m.i_S[t,l] for l in m.L))**2) for t in m.T)
     return cost_DUoS_export + cost_DUoS_import + homerun 
     

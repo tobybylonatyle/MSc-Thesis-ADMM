@@ -20,11 +20,11 @@ def check_complementarities_locations_subproblem(decision_vars):
 def plot_results_behaviour(results):
     fig, ax = plt.subplots(nrows=2, ncols=2, figsize=(12,12))
 
-    numloc = results['dualsT'].shape[1]
-    numperiods = results['dualsT'].shape[0]
-    dualgamma = results['dualgammasT'][0,0]
+    tperiods = results['dualsT'].shape[1]
+    iters = results['dualsT'].shape[0]
+    dualgamma = results['dualgammasT'][1,0]
     
-    fig.suptitle(f"Time Perios: {numloc}, Iterations: {numperiods}, DualGamma: {dualgamma}")
+    fig.suptitle(f"Time Perios: {tperiods}, Iterations: {iters}, DualGamma: {dualgamma}")
     ax[0,0].plot(results['obj_cost'])
     ax[0,0].set(xlabel="iteration", ylabel = 'objective value original')
     

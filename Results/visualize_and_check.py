@@ -24,7 +24,7 @@ def plot_results_behaviour(results):
     numperiods = results['dualsT'].shape[0]
     dualgamma = results['dualgammasT'][0,0]
     
-    fig.suptitle(f"Locations: {numloc}, TimePeriods: {numperiods}, DualGamma: {dualgamma}")
+    fig.suptitle(f"Time Perios: {numloc}, Iterations: {numperiods}, DualGamma: {dualgamma}")
     ax[0,0].plot(results['obj_cost'])
     ax[0,0].set(xlabel="iteration", ylabel = 'objective value original')
     

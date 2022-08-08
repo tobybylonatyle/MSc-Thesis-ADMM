@@ -110,7 +110,7 @@ class SiteModel(pyo.AbstractModel):
         self.Cons_s_compl_bound     = pyo.Constraint(self.T, self.L, rule=aux.s_compl_bound)
 
     def __build_objective(self):
-        self.Objective_Cost = pyo.Objective(rule=aux.cost_ALR_site, sense=pyo.minimize) 
+        self.Objective_Cost = pyo.Objective(rule=aux.cost_ALR_site1, sense=pyo.minimize) 
  
     def build_instance(self, instance_size:int, equal_prices:bool, site_id =-1):
         # Check that an site_id is only provided for models of type 'SP_location'
@@ -198,7 +198,8 @@ class SiteModel(pyo.AbstractModel):
         # Initialize duals to be in their feasible interval [-Pi,-Pe]
         duals_UB = {t: -df_t[df_t['time']==t].iloc[0]['price_export'] for t in df_t['time'].unique()}
         duals_LB = {t: -df_t[df_t['time']==t].iloc[0]['price_import'] for t in df_t['time'].unique()}
-        dict_data['dual'] = {t: (duals_UB[t]+duals_LB[t])/2 for t in df_t['time'].unique()}
+        # dict_data['dual'] = {t: (duals_UB[t]+duals_LB[t])/2 for t in df_t['time'].unique()}
+        dict_data['dual'] = {t: (duals_LB[t]) for t in df_t['time'].unique()}
         
         # Final dict to create instance from
         data = {None: dict_data}

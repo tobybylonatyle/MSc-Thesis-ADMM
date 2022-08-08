@@ -269,3 +269,36 @@ def feasibility_heuristic(inst,  exports_S_TL, imports_S_TL):
     return i_G, e_G
 
 
+def update_the_duals1(locations_instance, portfolio_instance, e_G_heur, i_G_heur):
+    new_dualsT = np.zeros(int(pyo.value(locations_instance.N_t)))
+    dualgammasT = np.zeros(int(pyo.value(locations_instance.N_t)))
+    primal_residualsT = np.zeros(int(pyo.value(locations_instance.N_t))) 
+    for t in locations_instance.T:
+        #Calculate primal residual for a given t
+        primal_residual = pyo.value(portfolio_instance.commitment_i[t]) \
+                            + pyo.value(i_G_heur[t-1]) \
+                            + sum(pyo.value(locations_instance.e_S[t,l]) for l in locations_instance.L) \
+                            - pyo.value(portfolio_instance.commitment_e[t]) \
+                            - pyo.value(e_G_heur[t]) \
+                            - sum(pyo.value(locations_instance.i_S[t,l]) for l in locations_instance.L)
+        
+        # a = pyo.value(portfolio_instance.commitment_i[t])
+        # b = pyo.value(portfolio_instance.i_G[t])
+        # c = sum(pyo.value(locations_instance.e_S[t,l]) for l in locations_instance.L)
+        # d = pyo.value(portfolio_instance.commitment_e[t])
+        # e = pyo.value(portfolio_instance.e_G[t])
+        # f = sum(pyo.value(locations_instance.i_S[t,l]) for l in locations_instance.L)
+        primal_residualsT[t-1] = primal_residual
+        dualgammasT[t-1] = pyo.value(locations_instance.dualgamma[t])
+        new_dualsT[t-1] =  pyo.value(locations_instance.dual[t]) + pyo.value(locations_instance.dualgamma[t])*primal_residual
+
+        
+        ###NOTE -- Project duals -- ist that a thing still???  -----
+        #new_dualsT = project_dual(new_dualsT, portfolio_instance)
+        
+        #Update the new dual and in locations_instance and portfolio_instance.
+        locations_instance.dual[t] = new_dualsT[t-1] #just a misalignment between pyomo iterator and numpy iterator
+        portfolio_instance.dual[t] = new_dualsT[t-1]
+    
+
+    return locations_instance, portfolio_instance, new_dualsT, primal_residualsT, dualgammasT

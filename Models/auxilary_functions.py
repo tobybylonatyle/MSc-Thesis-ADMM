@@ -38,6 +38,21 @@ def cost_ALR_site(m):
 
     return cost_DUoS_export + cost_DUoS_import + homerun 
 
+
+def cost_ALR_site1(m):
+    cost_DUoS = sum( m.DUoS_export[t,l]*m.e_S[t,l] + m.DUoS_import[t,l]*m.i_S[t,l] for t in m.T for l in m.L)
+    dualss = sum(m.dual[t]*(sum(m.e_S[t,l] - m.i_S[t,l] for l in m.L)) for t in m.T)
+    homerun = sum((m.dualgamma[t]/2)*((m.commitment_i[t] + m.i_G[t] + sum(m.e_S[t,l] for l in m.L) - m.commitment_e[t] - m.e_G[t] - sum(m.i_S[t,l] for l in m.L))**2) for t in m.T)
+    
+    return cost_DUoS + dualss + homerun
+
+def cost_ALR_portfolio1(m):
+    stuff = sum( m.price_import[t]*m.i_G[t] - m.price_export[t]*m.e_G[t] for t in m.T)
+    dualss = sum(m.dual[t]*(m.commitment_i[t] + m.i_G[t] - m.commitment_e[t] - m.e_G[t]) for t in m.T)
+    homerun = sum((m.dualgamma[t]/2)*((m.commitment_i[t] + m.i_G[t] + sum(m.e_S[t,l] for l in m.L) - m.commitment_e[t] - m.e_G[t] - sum(m.i_S[t,l] for l in m.L))**2) for t in m.T)
+    
+    return stuff + dualss + homerun
+
 def cost_ALR_portfolio(m):
     cost_import_grid    = sum((m.price_import[t] + m.dual[t]) * m.i_G[t] for t in m.T)
     profit_export_grid  = sum((m.price_export[t] - m.dual[t]) * m.e_G[t] for t in m.T)

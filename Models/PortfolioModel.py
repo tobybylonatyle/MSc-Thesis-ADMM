@@ -103,6 +103,7 @@ class PortfolioModel(pyo.AbstractModel):
 
         self.Cons_i_compl_bound     = pyo.Constraint(self.T, rule=aux.i_compl_bound)
         self.Cons_e_compl_bound     = pyo.Constraint(self.T, rule=aux.e_compl_bound)
+        # self.Cons_i_e_compl         = pyo.Constraint(self.T, rule= aux.i_e_compl)
 
         # self.Cons_i_e_compl         = pyo.Constraint(self.T, rule=aux.i_e_compl)
         # self.Cons_i_compl_bound_relax = pyo.Constraint(self.T, rule=aux.i_compl_bound_relax)
@@ -110,7 +111,7 @@ class PortfolioModel(pyo.AbstractModel):
         # self.Cons_grid_connect_limit_raf = pyo.Constraint(self.T, rule= aux.grid_connect_limit_raf)
 
     def __build_objective(self):
-        self.Objective_Cost = pyo.Objective(rule=aux.cost_ALR_portfolio, sense=pyo.minimize) 
+        self.Objective_Cost = pyo.Objective(rule=aux.cost_ALR_portfolio1, sense=pyo.minimize) 
  
     def build_instance(self, instance_size:int, equal_prices:bool, site_id =-1):
         # Check that an site_id is only provided for models of type 'SP_location'
@@ -198,7 +199,8 @@ class PortfolioModel(pyo.AbstractModel):
         # Initialize duals to be in their feasible interval [-Pi,-Pe]
         duals_UB = {t: -df_t[df_t['time']==t].iloc[0]['price_export'] for t in df_t['time'].unique()}
         duals_LB = {t: -df_t[df_t['time']==t].iloc[0]['price_import'] for t in df_t['time'].unique()}
-        dict_data['dual'] = {t: (duals_UB[t]+duals_LB[t])/2 for t in df_t['time'].unique()}
+        # dict_data['dual'] = {t: (duals_UB[t]+duals_LB[t])/2 for t in df_t['time'].unique()}
+        dict_data['dual'] = {t: (duals_LB[t]) for t in df_t['time'].unique()}
         
         # Final dict to create instance from
         data = {None: dict_data}

@@ -302,3 +302,60 @@ def update_the_duals1(locations_instance, portfolio_instance, e_G_heur, i_G_heur
     
 
     return locations_instance, portfolio_instance, new_dualsT, primal_residualsT, dualgammasT
+
+
+def calculate_obj_cost_exchange(location_instances, e_G, i_G):
+    min_obj = np.zeros(int(len(location_instances)))
+    SiteExport = 0
+    SiteImport = 0
+    li = location_instances
+    for a in li:
+        SiteExport += sum( li[a].DUoS_export[t,l]*pyo.value(li[a].e_S[t,l]) for l in li[a].L for t in li[a].T)
+        SiteImport += sum( li[a].DUoS_import[t,l]*pyo.value(li[a].i_S[t,l]) for l in li[a].L for t in li[a].T)
+
+    GridRevenue = sum(li[0].price_import[t]*i_G[t-1] - li[0].price_export[t]*e_G[t-1] for t in li[0].T)
+
+    objective_cost_original = SiteExport + SiteImport + GridRevenue
+
+    dualized_constraint_value = sum(li[0].dual[t]*(li[0].commitment_i[t] + i_G[t-1] + sum( pyo.value(li[a].e_S[t,l]) for a in li for l in li[a].L) - li[0].commitment_e[t] - e_G[t-1] - sum( pyo.value(li[a].i_S[t,l]) for a in li for l in li[a].L) ) for t in li[0].T)
+    
+    augmentation_value = sum((li[0].dualgamma[t]/2)*((li[0].commitment_i[t] + i_G[t-1] + sum( pyo.value(li[a].e_S[t,l]) for a in li for l in li[a].L) - li[0].commitment_e[t] - e_G[t-1] - sum( pyo.value(li[a].i_S[t,l]) for a in li for l in li[a].L) ))**2 for t in li[0].T)
+    
+    # i = 0 
+    # for m in li:
+    #     cost_DUoS_export   = sum((li[m].DUoS_export[t,l]  + li[m].dual[t]) * pyo.value(li[m].e_S[t,l]) for t in li[m].T for l in li[m].L)
+    #     cost_DUoS_import   = sum((li[m].DUoS_import[t,l]  - li[m].dual[t]) * pyo.value(li[m].i_S[t,l]) for t in li[m].T for l in li[m].L)
+
+    #     homerun = sum((li[m].dualgamma[t]/2)*((li[m].commitment_i[t] + i_G[t-1] + sum(pyo.value(li[m].e_S_prime[t,l]) for l in li[m].L_prime) + sum(pyo.value(li[m].e_S[t,l]) for l in li[m].L) - li[m].commitment_e[t] - e_G[t-1] - sum(pyo.value(li[m].i_S_prime[t,l]) for l in li[m].L_prime) - sum(pyo.value(li[m].i_S[t,l]) for l in li[m].L))**2) for t in li[m].T)
+    #     min_obj[i] = cost_DUoS_export + cost_DUoS_import + homerun 
+    #     i =+ 1 
+
+    for a in li:
+        min_obj[a] = pyo.value(li[a].Objective_Cost)
+
+
+    return  objective_cost_original , dualized_constraint_value, augmentation_value, min_obj #, obj_cost_locations, obj_cost_portfolio
+     
+
+
+# def calculate_obj_cost(locations_instance, portfolio_instance):
+    SiteExport = sum( locations_instance.DUoS_export[t,l]*pyo.value(locations_instance.e_S[t,l]) for t in locations_instance.T for l in locations_instance.L)
+    SiteImport = sum( locations_instance.DUoS_import[t,l]*pyo.value(locations_instance.i_S[t,l]) for t in locations_instance.T for l in locations_instance.L)
+    GridExport = sum( portfolio_instance.price_export[t]*pyo.value(portfolio_instance.e_G[t]) for t in portfolio_instance.T)
+    GridImport = sum( portfolio_instance.price_import[t]*pyo.value(portfolio_instance.i_G[t]) for t in portfolio_instance.T)
+    objective_cost_original = SiteExport + SiteImport + GridImport - GridExport
+
+    mL = locations_instance
+    mP = portfolio_instance
+    dualized_constraint_value = sum(pyo.value(mP.dual[t])*(pyo.value(mP.commitment_i[t])+pyo.value(mP.i_G[t])+sum(pyo.value(mL.e_S[t,l]) for l in mL.L) - pyo.value(mP.commitment_e[t]) - pyo.value(mP.e_G[t]) - sum(pyo.value(mL.i_S[t,l]) for l in mL.L)) for t in mP.T)
+
+    augmentation_value = sum((pyo.value(mP.dualgamma[t])/2)*((pyo.value(mP.commitment_i[t])+pyo.value(mP.i_G[t])+sum(pyo.value(mL.e_S[t,l]) for l in mL.L) - pyo.value(mP.commitment_e[t]) - pyo.value(mP.e_G[t]) - sum(pyo.value(mL.i_S[t,l]) for l in mL.L))**2) for t in mP.T)
+    
+    
+    minimization_objective = objective_cost_original + dualized_constraint_value + augmentation_value
+
+    obj_cost_locations = pyo.value(mL.Objective_Cost)
+    obj_cost_portfolio = pyo.value(mP.Objective_Cost)
+
+    return objective_cost_original, dualized_constraint_value, augmentation_value, minimization_objective, obj_cost_locations, obj_cost_portfolio
+    

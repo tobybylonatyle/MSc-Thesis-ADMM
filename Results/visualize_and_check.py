@@ -25,17 +25,17 @@ def plot_results_behaviour(results):
     dualgamma = results['dualgammasT'][1,0]
     
     fig.suptitle(f"Time Perios: {tperiods}, Iterations: {iters}, DualGamma: {dualgamma}")
-    ax[0,0].plot(results['obj_cost'])
+    ax[0,0].plot(results['obj_cost'][1:])
     ax[0,0].set(xlabel="iteration", ylabel = 'objective value original')
     
-    ax[1,1].plot(results['min_obj'])
+    ax[1,1].plot(results['min_obj'][1:])
     ax[1,1].set(xlabel="iteration", ylabel = 'minimization objective')
 
     for i in range(results['dualsT'].shape[1]):
-        ax[0,1].plot(results['dualsT'][:,i])
+        ax[0,1].plot(results['dualsT'][1:,i])
         ax[0,1].set(xlabel="iteration",ylabel='dual values')
 
-        ax[1,0].plot(results['primal_residualsT'][:,i])
+        ax[1,0].plot(results['primal_residualsT'][1:,i])
         ax[1,0].set(xlabel="iteration", ylabel='primal residual')
 
 

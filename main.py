@@ -4,10 +4,10 @@ import pyomo.environ as pyo
 import numpy as np
 
 
-SOLVER_NAME = 'gurobi'
+SOLVER_NAME = 'gurobi'#'amplxpress'
 INSTANCE_SIZE = 2
 EQUAL_PRICES = False
-MAX_ITER = 7
+MAX_ITER = 10
 TOLERANCE = 1
 
 def solve_MILP():
@@ -101,28 +101,28 @@ def solve_ADMM():
     decision_vars = {}
     new_dualsT = np.zeros(int(pyo.value(location_instances[0].N_t)))
     primal_residualsT = np.zeros(int(pyo.value(location_instances[0].N_t)))
-    min_obj = 0
+    objective_cost_original, dualized_constraint_value, augmentation_value = 0, 0, 0
     i_G = np.zeros(int(pyo.value(location_instances[0].N_t)))
     e_G = np.zeros(int(pyo.value(location_instances[0].N_t)))
     exports_S_TL =  np.zeros((int(pyo.value(location_instances[0].N_t)), int(pyo.value(location_instances[0].N_l_prime))))
     imports_S_TL = np.zeros((int(pyo.value(location_instances[0].N_t)), int(pyo.value(location_instances[0].N_l_prime))))
     charge_TBL = np.zeros((int(pyo.value(location_instances[0].N_t)), int(pyo.value(location_instances[0].N_b_max)), int(pyo.value(location_instances[0].N_l_prime))))
     discharge_TBL = np.zeros((int(pyo.value(location_instances[0].N_t)), int(pyo.value(location_instances[0].N_b_max)), int(pyo.value(location_instances[0].N_l_prime))))
-    
+    dualgammasT = np.zeros(int(pyo.value(location_instances[0].N_t)))
+    min_obj = np.zeros(int(len(location_instances)))
 
     #-- ADMM  -- 
     iter = 0
     while(iter < MAX_ITER):
         print(f"iteration {iter}")
 
-
         # Store computational Results
-        # computational_data['obj_cost'].append(objective_cost_original)
-        # computational_data['dualized_constraint_value'].append(dualized_constraint_value)
-        # computational_data['augmentation_value'].append(augmentation_value)
+        computational_data['obj_cost'].append(objective_cost_original)
+        computational_data['dualized_constraint_value'].append(dualized_constraint_value)
+        computational_data['augmentation_value'].append(augmentation_value)
         computational_data['dualsT'].append(new_dualsT)
         computational_data['primal_residualsT'].append(primal_residualsT)
-        # computational_data['dualgammasT'].append(dualgammasT)
+        computational_data['dualgammasT'].append(dualgammasT)
         computational_data['min_obj'].append(min_obj)
 
         decision_vars[iter] = {'e_G': e_G, 'i_G': i_G, 'e_S': exports_S_TL, 'i_S': imports_S_TL, 'charge_TBL': charge_TBL, 'discharge_TBL': discharge_TBL }
@@ -132,15 +132,18 @@ def solve_ADMM():
 
         exports_S_TL, imports_S_TL, charge_TBL, discharge_TBL = helpers.extract_from_exchange_ADMM(location_instances)
 
-
         i_G, e_G = helpers.feasibility_heuristic(location_instances[0], exports_S_TL, imports_S_TL)
 
         new_dualsT, location_instances, primal_residualsT = helpers.ExchangeUpdateDuals(location_instances, i_G, e_G, imports_S_TL, exports_S_TL)
-
+        objective_cost_original, dualized_constraint_value, augmentation_value, min_obj  = helpers.calculate_obj_cost_exchange(location_instances, e_G, i_G)
+        # obj_cost_locations, obj_cost_portfolio 
+     
         iter += 1 
 
     computational_data['dualsT'] = np.stack(computational_data['dualsT'],axis=0)
     computational_data['primal_residualsT'] = np.stack(computational_data['primal_residualsT'],axis=0)
+    computational_data['min_obj'] = np.stack(computational_data['min_obj'],axis=0)
+
     return location_instances, computational_data, decision_vars
 
     
@@ -161,7 +164,7 @@ def solve_RFL():
 
     print(" > Solving RFL")
     solver = helpers.build_solver(SOLVER_NAME)
-    solver.options['NonConvex'] = 2
+    # solver.options['NonConvex'] = 2 #THE BUG! FINALLY FIXED
 
     locations_model = helpers.build_model("SiteModel")
     locations_instance = locations_model.build_instance(instance_size=INSTANCE_SIZE, equal_prices=EQUAL_PRICES)

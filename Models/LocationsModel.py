@@ -33,8 +33,8 @@ class LocationsModel(pyo.AbstractModel):
         self.L_prime = pyo.RangeSet(1, self.N_l_prime)
 
         # -- Grid parameters --
-        # self.price_import = pyo.Param(self.T, within=pyo.NonNegativeReals)   # Market import price
-        # self.price_export = pyo.Param(self.T, within=pyo.NonNegativeReals)   # Market export price
+        self.price_import = pyo.Param(self.T, within=pyo.NonNegativeReals)   # Market import price
+        self.price_export = pyo.Param(self.T, within=pyo.NonNegativeReals)   # Market export price
         self.commitment_i = pyo.Param(self.T, within=pyo.NonNegativeReals)   # Day-Ahead commitment to import
         self.commitment_e = pyo.Param(self.T, within=pyo.NonNegativeReals)   # Day-Ahead commitment to export
 
@@ -89,7 +89,7 @@ class LocationsModel(pyo.AbstractModel):
         #self.gamma = pyo.Var(self.T, within=pyo.Binary) # Binary for export/import complementarity
 
         #--TESTING
-        # self.z     = pyo.Var(self.T, self.LB, within=pyo.Binary) # Binary for charging/discharging complementarity
+        self.z     = pyo.Var(self.T, self.LB, within=pyo.Binary) # Binary for charging/discharging complementarity
         self.delta = pyo.Var(self.T, self.L, within=pyo.Binary)  # Binary for send/receive complementarity
 
     def __build_constraints(self):
@@ -108,8 +108,8 @@ class LocationsModel(pyo.AbstractModel):
         # self.Cons_balance_portfolio  = pyo.Constraint(self.T, rule=aux.energy_balance_portfolio)
 
         # -- TESTING
-        # self.Cons_c_compl_bound     = pyo.Constraint(self.T, self.LB, rule=aux.c_compl_bound)
-        # self.Cons_d_compl_bound     = pyo.Constraint(self.T, self.LB, rule=aux.d_compl_bound)
+        self.Cons_c_compl_bound     = pyo.Constraint(self.T, self.LB, rule=aux.c_compl_bound)
+        self.Cons_d_compl_bound     = pyo.Constraint(self.T, self.LB, rule=aux.d_compl_bound)
         self.Cons_r_compl_bound     = pyo.Constraint(self.T, self.L, rule=aux.r_compl_bound)
         self.Cons_s_compl_bound     = pyo.Constraint(self.T, self.L, rule=aux.s_compl_bound)
 
@@ -196,7 +196,8 @@ class LocationsModel(pyo.AbstractModel):
         # Initialize duals to be in their feasible interval [-Pi,-Pe]
         duals_UB = {t: -df_t[df_t['time']==t].iloc[0]['price_export'] for t in df_t['time'].unique()}
         duals_LB = {t: -df_t[df_t['time']==t].iloc[0]['price_import'] for t in df_t['time'].unique()}
-        dict_data['dual'] = {t: (duals_UB[t]+duals_LB[t])/2 for t in df_t['time'].unique()}
+        # dict_data['dual'] = {t: (duals_UB[t]+duals_LB[t])/2 for t in df_t['time'].unique()}
+        dict_data['dual'] = {t: (duals_LB[t]) for t in df_t['time'].unique()}
     
        
         

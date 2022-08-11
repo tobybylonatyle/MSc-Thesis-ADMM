@@ -200,6 +200,7 @@ class SiteModel(pyo.AbstractModel):
         duals_LB = {t: -df_t[df_t['time']==t].iloc[0]['price_import'] for t in df_t['time'].unique()}
         # dict_data['dual'] = {t: (duals_UB[t]+duals_LB[t])/2 for t in df_t['time'].unique()}
         dict_data['dual'] = {t: (duals_LB[t]) for t in df_t['time'].unique()}
+        # dict_data['dual'] = {t: (0) for t in df_t['time'].unique()}
         
         # Final dict to create instance from
         data = {None: dict_data}

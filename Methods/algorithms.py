@@ -19,8 +19,8 @@ def solve_MILP(solver_name, instance_size, equal_prices):
     print(pyo.value(instance.Objective_Cost))
 
     decision_vars ={}
-    exports_G_T, imports_G_T, exports_S_TL, imports_S_TL = helpers.extract_from_non_decomposed(instance)
-    decision_vars[0] = {'e_G': exports_G_T, 'i_G': imports_G_T, 'e_S': exports_S_TL, 'i_S': imports_S_TL }
+    exports_G_T, imports_G_T, exports_S_TL, imports_S_TL, charge_TBL, discharge_TBL = helpers.extract_from_non_decomposed(instance)
+    decision_vars[0] = {'e_G': exports_G_T, 'i_G': imports_G_T, 'e_S': exports_S_TL, 'i_S': imports_S_TL, 'charge_TBL': charge_TBL, 'discharge_TBL': discharge_TBL }
 
     return decision_vars, instance, result
 

@@ -213,6 +213,8 @@ def feed_to_exchange_ADMM(location_instances, e_G, i_G):
     return location_instances
 
 def extract_from_non_decomposed(instance):
+    charge_TBL = np.zeros((int(pyo.value(instance.N_t)), int(pyo.value(instance.N_b_max)), int(pyo.value(instance.N_l_prime))))
+    discharge_TBL = np.zeros((int(pyo.value(instance.N_t)), int(pyo.value(instance.N_b_max)), int(pyo.value(instance.N_l_prime))))
     exports_G_T = np.zeros(int(pyo.value(instance.N_t)))
     imports_G_T = np.zeros(int(pyo.value(instance.N_t)))
 
@@ -232,8 +234,12 @@ def extract_from_non_decomposed(instance):
 
             exports_S_TL[t-1,l-1] = pyo.value(instance.e_S[t,l])
             imports_S_TL[t-1,l-1] = pyo.value(instance.i_S[t,l])
+
+            for b in instance.B_max:
+                charge_TBL[t-1,b-1,l-1] = pyo.value(instance.c[t,l,b])
+                discharge_TBL[t-1,b-1,l-1] = pyo.value(instance.d[t,l,b])
     
-    return exports_G_T, imports_G_T, exports_S_TL, imports_S_TL
+    return exports_G_T, imports_G_T, exports_S_TL, imports_S_TL, charge_TBL, discharge_TBL
        
 
 

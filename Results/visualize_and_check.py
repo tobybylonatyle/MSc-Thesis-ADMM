@@ -1,4 +1,18 @@
 import matplotlib.pyplot as plt
+import _pickle as CPickle
+from os import listdir
+
+def save_run(results):
+    i = len(listdir("Results/"))
+    with open(f'Results/results{i}', 'wb') as f:
+        CPickle.dump(results, f)
+    print("done")
+
+def open_run(path):
+    with open(r"Results/"+path, 'rb') as input_file:
+        temp = CPickle.load(input_file)
+    return temp
+
 
 def check_complementarities_locations_subproblem(decision_vars):
     for iter in decision_vars.keys():

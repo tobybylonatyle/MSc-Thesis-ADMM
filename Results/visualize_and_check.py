@@ -1,7 +1,9 @@
-import matplotlib.pyplot as plt
-import _pickle as CPickle
 from os import listdir
+
+import pickle as CPickle
+import matplotlib.pyplot as plt
 import numpy as np
+
 
 def save_run(results):
     i = len(listdir("Results/"))

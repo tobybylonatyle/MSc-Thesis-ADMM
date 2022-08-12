@@ -5,9 +5,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-def save_run(results):
-    i = len(listdir("Results/"))
-    with open(f'Results/results{i}', 'wb') as f:
+def save_run(results,name):
+    # i = len(listdir("Results/"))
+    with open(f'Results/results_{name}', 'wb') as f:
         CPickle.dump(results, f)
     print("done")
 

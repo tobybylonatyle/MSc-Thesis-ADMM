@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import _pickle as CPickle
 from os import listdir
+import numpy as np
 
 def save_run(results):
     i = len(listdir("Results/"))
@@ -55,3 +56,32 @@ def plot_results_behaviour(results):
 
 
     plt.show()
+
+def compare_decision_vars(dv_LP, dv_compare):
+    relative_errors = {}
+    for iter in dv_compare:
+        test = dict.fromkeys(dv_LP[0].keys())
+        for var in dv_compare[iter]:
+            comparison = (dv_compare[iter][var]-dv_LP[0][var])/dv_LP[0][var]
+            test[var] = comparison
+        relative_errors[iter] = test
+
+    return relative_errors
+
+def calculate_objective_cost_from_decision_vars(dv, instance_LP):
+    virgin_objective_value = np.zeros(int(len(dv.keys())))
+    try:
+        TEMP = instance_LP.L_prime
+    except:
+        TEMP = instance_LP.L
+    for iter in dv.keys():
+        DUoS_export = sum(instance_LP.DUoS_export[t,l]*dv[iter]['e_S'][t-1,l-1] for t in instance_LP.T for l in TEMP)
+        DUoS_import = sum(instance_LP.DUoS_import[t,l]*dv[iter]['i_S'][t-1,l-1] for t in instance_LP.T for l in TEMP)
+        Grid_export = sum(instance_LP.price_import[t]*dv[iter]['i_G'][t-1] for t in instance_LP.T)
+        Grid_import = sum(instance_LP.price_export[t]*dv[iter]['e_G'][t-1] for t in instance_LP.T )
+
+        virgin_objective_value[iter] = DUoS_export + DUoS_import + Grid_import - Grid_export
+
+    return virgin_objective_value
+
+    

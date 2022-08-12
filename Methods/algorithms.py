@@ -6,15 +6,18 @@ import numpy as np
 def solve_MILP(solver_name, instance_size, equal_prices):
     """MILP Formulation of the Problem"""
     print("> Solving MILP")
+    time_complexity = {'instantiating_single_model':[],'solving_single_model': [], 'instantiating_locations' : [], 'instantiating_portfolio': [], 'solving_locations' : [], 'solving_portfolio': [], 'algorithm_time':[], 'heuristic_time':[]}
+
     solver = helpers.build_solver(solver_name)
+
+    instantiating_single_model_start = time.perf_counter()
     model = helpers.build_model('MILPModel')
-
     instance = model.build_instance(instance_size=instance_size, equal_prices=equal_prices)
+    time_complexity['instantiating_single_model'] = time.perf_counter() - instantiating_single_model_start
 
-    start_time = time.perf_counter()
+    solving_single_model_start = time.perf_counter()
     result = solver.solve(instance)
-    print(time.perf_counter()- start_time)
-
+    time_complexity['solving_single_model'] = time.perf_counter() - solving_single_model_start
 
     print(pyo.value(instance.Objective_Cost))
 
@@ -22,19 +25,22 @@ def solve_MILP(solver_name, instance_size, equal_prices):
     exports_G_T, imports_G_T, exports_S_TL, imports_S_TL, charge_TBL, discharge_TBL = helpers.extract_from_non_decomposed(instance)
     decision_vars[0] = {'e_G': exports_G_T, 'i_G': imports_G_T, 'e_S': exports_S_TL, 'i_S': imports_S_TL, 'charge_TBL': charge_TBL, 'discharge_TBL': discharge_TBL }
 
-    return decision_vars, instance, result
+    return decision_vars, instance, result, time_complexity
 
 
 def solve_LP(solver_name, instance_size, equal_prices):
     print("> Solving LP")
+    time_complexity = {'instantiating_single_model':[],'solving_single_model': [], 'instantiating_locations' : [], 'instantiating_portfolio': [], 'solving_locations' : [], 'solving_portfolio': [], 'algorithm_time':[], 'heuristic_time':[]}
+
     solver = helpers.build_solver(solver_name)
+    instantiating_single_model_start = time.perf_counter()
     model = helpers.build_model('LPModel')
-
     instance = model.build_instance(instance_size=instance_size, equal_prices=equal_prices)
+    time_complexity['instantiating_single_model'] = time.perf_counter() - instantiating_single_model_start
 
-    start_time = time.perf_counter()
+    solve_single_model_start = time.perf_counter()
     result = solver.solve(instance)
-    print(time.perf_counter()- start_time)
+    time_complexity['solving_single_model'] = time.perf_counter()- solve_single_model_start
 
 
     print(pyo.value(instance.Objective_Cost))
@@ -43,7 +49,7 @@ def solve_LP(solver_name, instance_size, equal_prices):
     exports_G_T, imports_G_T, exports_S_TL, imports_S_TL, charge_TBL, discharge_TBL = helpers.extract_from_non_decomposed(instance)
     decision_vars[0] = {'e_G': exports_G_T, 'i_G': imports_G_T, 'e_S': exports_S_TL, 'i_S': imports_S_TL, 'charge_TBL': charge_TBL, 'discharge_TBL': discharge_TBL }
 
-    return decision_vars, instance, result
+    return decision_vars, instance, result, time_complexity
 
 
 def solve_two_block_ADMM(solver_name, instance_size, equal_prices, max_iter, dual_gamma:int):
@@ -51,6 +57,7 @@ def solve_two_block_ADMM(solver_name, instance_size, equal_prices, max_iter, dua
 
     computational_data = {'obj_cost': [], 'dualized_constraint_value' : [], 'augmentation_value': [], 'dualsT': [], 'primal_residualsT': [], 'dualgammasT' : [], 'min_obj' :[], 'obj_cost_locations' :[], 'obj_cost_portfolio' :[] }
     decision_vars = {}
+    time_complexity = {'instantiating_locations' : [], 'instantiating_portfolio': [], 'solving_locations' : [], 'solving_portfolio': [], 'algorithm_time':[]}
 
     print(" > Solving Sequential 2 block ADMM")
     solver = helpers.build_solver(solver_name)

@@ -54,20 +54,26 @@ def solve_LP(solver_name, instance_size, equal_prices):
 
 def solve_two_block_ADMM(solver_name, instance_size, equal_prices, max_iter, dual_gamma:int):
     """Sequential 2 block ADMM, SiteModel and PortfolioModel """
+    print(" > Solving Sequential 2 block ADMM")
 
     computational_data = {'obj_cost': [], 'dualized_constraint_value' : [], 'augmentation_value': [], 'dualsT': [], 'primal_residualsT': [], 'dualgammasT' : [], 'min_obj' :[], 'obj_cost_locations' :[], 'obj_cost_portfolio' :[] }
     decision_vars = {}
-    time_complexity = {'instantiating_locations' : [], 'instantiating_portfolio': [], 'solving_locations' : [], 'solving_portfolio': [], 'algorithm_time':[]}
+    time_complexity = {'instantiating_single_model':[],'solving_single_model': [], 'instantiating_locations' : [], 'instantiating_portfolio': [], 'solving_locations' : [], 'solving_portfolio': [], 'algorithm_time':[], 'heuristic_time':[]}
 
-    print(" > Solving Sequential 2 block ADMM")
+
+    
     solver = helpers.build_solver(solver_name)
     # solver.options['NonConvex'] = 2 #THE BUG! FINALLY FIXED
 
+    instantiating_locations_start = time.perf_counter()
     locations_model = helpers.build_model("SiteModel")
     locations_instance = locations_model.build_instance(instance_size=instance_size, equal_prices=equal_prices)
+    time_complexity['instantiating_locations'] = time.perf_counter() - instantiating_locations_start
 
+    instantiating_portfolio_start = time.perf_counter()
     portfolio_model = helpers.build_model("PortfolioModel")
     portfolio_instance = portfolio_model.build_instance(instance_size=instance_size, equal_prices=equal_prices)
+    time_complexity['instantiating_portfolio'] = time.perf_counter() - instantiating_portfolio_start
 
     # Intialize for the very first solve 
     for t in locations_instance.T:
@@ -110,13 +116,21 @@ def solve_two_block_ADMM(solver_name, instance_size, equal_prices, max_iter, dua
 
         decision_vars[iter] = {'e_G': exports_G_T, 'i_G': imports_G_T, 'e_S': exports_S_TL, 'i_S': imports_S_TL, 'charge_TBL': charge_TBL, 'discharge_TBL': discharge_TBL}
 
-        
+        algorithm_time_start = time.perf_counter()
+
+        solving_locations_start = time.perf_counter()
         result_p                                                       = solver.solve(locations_instance) # Solve locations subproblem
         # print(result_p)
+        time_complexity['solving_locations'].append(time.perf_counter() - solving_locations_start)
+
         exports_S_TL, imports_S_TL, charge_TBL, discharge_TBL          = helpers.extract_from_locations(locations_instance) # Extract data from locations supbroblem 
         portfolio_instance                                             = helpers.feed_to_portfolio(portfolio_instance, exports_S_TL, imports_S_TL) # Feed locations subproblem data into portfolio subproblem
+        
+        solving_portfolio_start = time.perf_counter()
         result_l                                                       = solver.solve(portfolio_instance) # Solve portfolio subproblem
         # print(result_l)
+        time_complexity['solving_portfolio'].append(time.perf_counter() - solving_portfolio_start)
+
         exports_G_T, imports_G_T                                       = helpers.extract_from_portfolio(portfolio_instance) # Extract data from portfolio subproblem
         # print(exports_G_T)
         # print(imports_G_T)
@@ -124,6 +138,9 @@ def solve_two_block_ADMM(solver_name, instance_size, equal_prices, max_iter, dua
         
 
         locations_instance, portfolio_instance, dualsT, primal_residualsT, dualgammasT    = helpers.update_the_duals(locations_instance, portfolio_instance) # Update the dual variables
+        
+        time_complexity['algorithm_time'].append(time.perf_counter() - algorithm_time_start)
+        
         objective_cost_original, dualized_constraint_value, augmentation_value, min_obj, obj_cost_locations, obj_cost_portfolio   = helpers.calculate_obj_cost(locations_instance, portfolio_instance)
      
 
@@ -146,7 +163,7 @@ def solve_two_block_ADMM(solver_name, instance_size, equal_prices, max_iter, dua
     
 
 
-    return computational_data, portfolio_instance, locations_instance, decision_vars
+    return computational_data, portfolio_instance, locations_instance, decision_vars, time_complexity
 
 def solve_modified_two_block_ADMM(solver_name, instance_size, equal_prices, max_iter, dual_gamma:int):
     """Sequential 2 block ADMM, SiteModel and PortfolioModel(USES HEURISTIC!!!) """

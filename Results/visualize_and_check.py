@@ -12,7 +12,7 @@ def save_run(results,name):
     print("done")
 
 def open_run(path):
-    with open(r"Results/"+path, 'rb') as input_file:
+    with open(f"Results/results_{path}", 'rb') as input_file:
         temp = CPickle.load(input_file)
     return temp
 

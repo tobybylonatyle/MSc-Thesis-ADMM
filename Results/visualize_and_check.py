@@ -18,19 +18,24 @@ def open_run(path):
 
 
 def check_complementarities_locations_subproblem(decision_vars):
+    total_violations = 0
     for iter in decision_vars.keys():
         T, B, L = decision_vars[iter]['charge_TBL'].shape
         for t in range(T):
             if (decision_vars[iter]['e_G'][t]*decision_vars[iter]['i_G'][t] != 0):
                 print(f"Import Export, iteration {iter}, time {t}")
+                total_violations += 1
 
             for l in range(L):
                 if (decision_vars[iter]['e_S'][t,l]*decision_vars[iter]['i_S'][t,l] != 0):
                     print(f"send/recieve, iteration {iter},location {l}, time {t} ")
+                    total_violations += 1
             
                 for b in range(B):
                     if (decision_vars[iter]['charge_TBL'][t,b,l]*decision_vars[iter]['discharge_TBL'][t,b,l] != 0):
                         print(f"charge/discharge, iter {iter}, location {l}, time {t}, battery {b}")
+                        total_violations += 1
+    return total_violations
 
 
 

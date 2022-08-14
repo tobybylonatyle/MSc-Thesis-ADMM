@@ -75,6 +75,17 @@ def compare_decision_vars(dv_LP, dv_compare):
 
     return relative_errors
 
+def compare_decision_vars_iterations(dv_a, dv_b):
+    relative_errors = {}
+    for iter in dv_b:
+        test = dict.fromkeys(dv_a[iter].keys())
+        for var in dv_b[iter]:
+            comparison = (dv_b[iter][var]-dv_a[iter][var])/dv_a[iter][var]
+            test[var] = comparison
+        relative_errors[iter] = test
+
+    return relative_errors
+
 def calculate_objective_cost_from_decision_vars(dv, instance_LP):
     virgin_objective_value = np.zeros(int(len(dv.keys())))
     try:

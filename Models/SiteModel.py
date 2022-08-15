@@ -112,7 +112,7 @@ class SiteModel(pyo.AbstractModel):
     def __build_objective(self):
         self.Objective_Cost = pyo.Objective(rule=aux.cost_ALR_site1, sense=pyo.minimize) 
  
-    def build_instance(self, instance_size:int, equal_prices:bool, site_id =-1):
+    def build_instance(self, instance_size:int, equal_prices:bool, site_id =-1, lambda_init:str = "0"):
         # Check that an site_id is only provided for models of type 'SP_location'
         # assert not((site_id != -1) & (self.type != ModelType.SP_location)), f"Parameter `site_id` is only valid for models of type {ModelType.SP_location}"
 
@@ -198,9 +198,14 @@ class SiteModel(pyo.AbstractModel):
         # Initialize duals to be in their feasible interval [-Pi,-Pe]
         duals_UB = {t: -df_t[df_t['time']==t].iloc[0]['price_export'] for t in df_t['time'].unique()}
         duals_LB = {t: -df_t[df_t['time']==t].iloc[0]['price_import'] for t in df_t['time'].unique()}
-        # dict_data['dual'] = {t: (duals_UB[t]+duals_LB[t])/2 for t in df_t['time'].unique()}
-        dict_data['dual'] = {t: (duals_LB[t]) for t in df_t['time'].unique()}
-        # dict_data['dual'] = {t: (-1) for t in df_t['time'].unique()}
+
+        if lambda_init == "0":
+            dict_data['dual'] = {t: (-1) for t in df_t['time'].unique()}
+        elif lambda_init == "LB":
+            dict_data['dual'] = {t: (duals_LB[t]) for t in df_t['time'].unique()}
+        elif lambda_init == "MidPoint":
+            dict_data['dual'] = {t: (duals_UB[t]+duals_LB[t])/2 for t in df_t['time'].unique()}
+
         
         # Final dict to create instance from
         data = {None: dict_data}

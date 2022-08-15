@@ -7,12 +7,12 @@ import numpy as np
 
 def save_run(results,name):
     # i = len(listdir("Results/"))
-    with open(f'Results/results_{name}', 'wb') as f:
+    with open(f'Results/{name}', 'wb') as f:
         CPickle.dump(results, f)
     print("done")
 
 def open_run(path):
-    with open(f"Results/results_{path}", 'rb') as input_file:
+    with open(f"Results/{path}", 'rb') as input_file:
         temp = CPickle.load(input_file)
     return temp
 

@@ -24,6 +24,7 @@ def plot_computational_behaviour(computational_results):
         ax[1,0].set(xlabel="iteration", ylabel='primal residual')
 
     plt.show()
+    return fig
 
 def plot_duality_gap(computational_results):
     plt.plot(computational_results['min_obj'][1:])

@@ -52,7 +52,7 @@ def solve_LP(solver_name, instance_size, equal_prices):
     return decision_vars, instance, result, time_complexity
 
 
-def solve_two_block_ADMM(solver_name, instance_size, equal_prices, max_iter, dual_gamma:int):
+def solve_two_block_ADMM(solver_name, instance_size, equal_prices, max_iter, dual_gamma:int, lambda_init:str):
     """Sequential 2 block ADMM, SiteModel and PortfolioModel """
     print(" > Solving Sequential 2 block ADMM")
 
@@ -67,7 +67,7 @@ def solve_two_block_ADMM(solver_name, instance_size, equal_prices, max_iter, dua
 
     instantiating_locations_start = time.perf_counter()
     locations_model = helpers.build_model("SiteModel")
-    locations_instance = locations_model.build_instance(instance_size=instance_size, equal_prices=equal_prices)
+    locations_instance = locations_model.build_instance(instance_size=instance_size, equal_prices=equal_prices, lambda_init=lambda_init)
     time_complexity['instantiating_locations'] = time.perf_counter() - instantiating_locations_start
 
     instantiating_portfolio_start = time.perf_counter()
@@ -161,7 +161,7 @@ def solve_two_block_ADMM(solver_name, instance_size, equal_prices, max_iter, dua
 
     return computational_data, portfolio_instance, locations_instance, decision_vars, time_complexity
 
-def solve_modified_two_block_ADMM(solver_name, instance_size, equal_prices, max_iter, dual_gamma:int):
+def solve_modified_two_block_ADMM(solver_name, instance_size, equal_prices, max_iter, dual_gamma:int, lambda_init:str):
     """Sequential 2 block ADMM, SiteModel and PortfolioModel(USES HEURISTIC!!!) """
     print(" > Solving Sequential MODIFIED 2 block ADMM")
 
@@ -176,7 +176,7 @@ def solve_modified_two_block_ADMM(solver_name, instance_size, equal_prices, max_
 
     instantiating_locations_start = time.perf_counter()
     locations_model = helpers.build_model("SiteModel")
-    locations_instance = locations_model.build_instance(instance_size=instance_size, equal_prices=equal_prices)
+    locations_instance = locations_model.build_instance(instance_size=instance_size, equal_prices=equal_prices, lambda_init=lambda_init)
     time_complexity['instantiating_locations'] = time.perf_counter() - instantiating_locations_start
 
     # portfolio_model = helpers.build_model("PortfolioModel")
@@ -270,7 +270,7 @@ def solve_modified_two_block_ADMM(solver_name, instance_size, equal_prices, max_
     portfolio_instance= 0
     return computational_data, portfolio_instance, locations_instance, decision_vars, time_complexity
 
-def solve_exchange_ADMM(solver_name, instance_size, equal_prices, max_iter, dual_gamma:int):
+def solve_exchange_ADMM(solver_name, instance_size, equal_prices, max_iter, dual_gamma:int, lambda_init:str):
     """small bug with this one somewhere. non convergant.. but thasts kinda expected so maybe no bug..."""
     print("> Solving Exchange ADMM")
     time_complexity = {'instantiating_single_model':[],'solving_single_model': [], 'instantiating_locations' : [], 'instantiating_portfolio': [], 'solving_locations' : [], 'solving_portfolio': [], 'algorithm_time':[], 'heuristic_time':[]}
@@ -285,7 +285,7 @@ def solve_exchange_ADMM(solver_name, instance_size, equal_prices, max_iter, dual
 
         instantiating_locations_start = time.perf_counter()
         location_models[l] = helpers.build_model("LocationsModel")
-        location_instances[l] = location_models[l].build_instance(instance_size=instance_size, equal_prices=equal_prices, site_id=l+1)
+        location_instances[l] = location_models[l].build_instance(instance_size=instance_size, equal_prices=equal_prices, site_id=l+1, lambda_init=lambda_init)
         time_complexity['instantiating_locations'].append(time.perf_counter() - instantiating_locations_start)
 
     
@@ -377,7 +377,7 @@ def solve_exchange_ADMM(solver_name, instance_size, equal_prices, max_iter, dual
     return computational_data, portfolio_instance, location_instances, decision_vars, time_complexity
 
 
-def solve_modified_exchange_ADMM(solver_name, instance_size, equal_prices, max_iter, dual_gamma:int):
+def solve_modified_exchange_ADMM(solver_name, instance_size, equal_prices, max_iter, dual_gamma:int, lambda_init:str):
     print("> Solving MODIFIED Exchange ADMM")
 
     time_complexity = {'instantiating_single_model':[],'solving_single_model': [], 'instantiating_locations' : [], 'instantiating_portfolio': [], 'solving_locations' : [], 'solving_portfolio': [], 'algorithm_time':[], 'heuristic_time':[]}
@@ -391,7 +391,7 @@ def solve_modified_exchange_ADMM(solver_name, instance_size, equal_prices, max_i
         print(f"   Creating Subproblem for Location {l+1}")
         instantiating_locations_start = time.perf_counter()
         location_models[l] = helpers.build_model("LocationsModel")
-        location_instances[l] = location_models[l].build_instance(instance_size=instance_size, equal_prices=equal_prices, site_id=l+1)
+        location_instances[l] = location_models[l].build_instance(instance_size=instance_size, equal_prices=equal_prices, site_id=l+1, lambda_init=lambda_init)
         time_complexity['instantiating_locations'].append(time.perf_counter() - instantiating_locations_start)
 
     

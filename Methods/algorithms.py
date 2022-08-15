@@ -145,13 +145,9 @@ def solve_two_block_ADMM(solver_name, instance_size, equal_prices, max_iter, dua
      
 
         #TODO Termination Condition
-        # num_of_converged_duals = 0
-        # for t in portfolio_instance.T:
-        #     if ((dualsT[t-1] - computational_data['dualsT'][iter][t-1])/computational_data['dualsT'][iter][t-1] < 1E-2):
-        #         num_of_converged_duals += 1 
-        # if num_of_converged_duals == pyo.value(portfolio_instance.N_t) -4:
-        #     print(f"Termination Condition, iteration {iter}")
-
+        # Euclidean_Norm_Of_Dual_Convergence =np.linalg.norm((computational_data['dualsT'][iter] - computational_data['dualsT'][iter -1 ])/computational_data['dualsT'][iter -1 ])
+        # if(Euclidean_Norm_Of_Dual_Convergence < 1E-3):
+        #     break
 
 
         iter += 1 
@@ -258,6 +254,9 @@ def solve_modified_two_block_ADMM(solver_name, instance_size, equal_prices, max_
      
         time_complexity['algorithm_time'].append(time.perf_counter() - algorithm_time_start)
         #TODO Termination Condition
+        # Euclidean_Norm_Of_Dual_Convergence =np.linalg.norm((computational_data['dualsT'][iter] - computational_data['dualsT'][iter -1 ])/computational_data['dualsT'][iter -1 ])
+        # if(Euclidean_Norm_Of_Dual_Convergence < 1E-4):
+        #     break
        
 
 

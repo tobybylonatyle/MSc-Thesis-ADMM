@@ -280,12 +280,16 @@ def solve_exchange_ADMM(solver_name, instance_size, equal_prices, max_iter, dual
     # -- Create |L| +1 decomposed subproblems -- 
     location_models = {}
     location_instances = {}
+    instance_size_read_data = instance_size
+    if instance_size in [100,200,500,1000]:
+        instance_size = int(instance_size/5)
+
     for l in range(instance_size):
         print(f"   Creating Subproblem for Location {l+1}")
 
         instantiating_locations_start = time.perf_counter()
         location_models[l] = helpers.build_model("LocationsModel")
-        location_instances[l] = location_models[l].build_instance(instance_size=instance_size, equal_prices=equal_prices, site_id=l+1, lambda_init=lambda_init)
+        location_instances[l] = location_models[l].build_instance(instance_size=instance_size_read_data, equal_prices=equal_prices, site_id=l+1, lambda_init=lambda_init)
         time_complexity['instantiating_locations'].append(time.perf_counter() - instantiating_locations_start)
 
     
@@ -300,7 +304,7 @@ def solve_exchange_ADMM(solver_name, instance_size, equal_prices, max_iter, dual
 
     instantiating_portfolio_start = time.perf_counter()
     portfolio_model = helpers.build_model("PortfolioModel")
-    portfolio_instance = portfolio_model.build_instance(instance_size=instance_size, equal_prices=equal_prices) 
+    portfolio_instance = portfolio_model.build_instance(instance_size=instance_size_read_data, equal_prices=equal_prices) 
     time_complexity['instantiating_portfolio'] = time.perf_counter() - instantiating_locations_start
 
     for t in portfolio_instance.T:
@@ -387,11 +391,14 @@ def solve_modified_exchange_ADMM(solver_name, instance_size, equal_prices, max_i
     # -- Create |L| +1 decomposed subproblems -- 
     location_models = {}
     location_instances = {}
+    instance_size_read_data = instance_size
+    if instance_size in [100,200,500,1000]:
+        instance_size = int(instance_size/5)
     for l in range(instance_size):
         print(f"   Creating Subproblem for Location {l+1}")
         instantiating_locations_start = time.perf_counter()
         location_models[l] = helpers.build_model("LocationsModel")
-        location_instances[l] = location_models[l].build_instance(instance_size=instance_size, equal_prices=equal_prices, site_id=l+1, lambda_init=lambda_init)
+        location_instances[l] = location_models[l].build_instance(instance_size=instance_size_read_data, equal_prices=equal_prices, site_id=l+1, lambda_init=lambda_init)
         time_complexity['instantiating_locations'].append(time.perf_counter() - instantiating_locations_start)
 
     
@@ -406,7 +413,7 @@ def solve_modified_exchange_ADMM(solver_name, instance_size, equal_prices, max_i
 
 
     portfolio_model = helpers.build_model("PortfolioModel")
-    portfolio_instance = portfolio_model.build_instance(instance_size=instance_size, equal_prices=equal_prices) 
+    portfolio_instance = portfolio_model.build_instance(instance_size=instance_size_read_data, equal_prices=equal_prices) 
     for t in portfolio_instance.T:
         portfolio_instance.dualgamma[t] = dual_gamma
 

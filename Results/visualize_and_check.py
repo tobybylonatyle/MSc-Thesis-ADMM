@@ -60,7 +60,29 @@ def plot_results_behaviour(results):
         ax[1,0].plot(results['primal_residualsT'][1:,i])
         ax[1,0].set(xlabel="iteration", ylabel='primal residual')
 
+    plt.show()
 
+    
+def plot_results_behaviour_new(results,iters_to_display):
+    fig, ax = plt.subplots(nrows=2, ncols=2, figsize=(12,12))
+
+    tperiods = results['dualsT'].shape[1]
+    iters = results['dualsT'].shape[0]
+    dualgamma = results['dualgammasT'][1,0]
+    
+    fig.suptitle(f"Time Perios: {tperiods}, Iterations: {iters}, DualGamma: {dualgamma}")
+    ax[0,0].plot(results['obj_cost'][1:iters_to_display])
+    ax[0,0].set(xlabel="iteration", ylabel = 'objective value original')
+    
+    ax[1,1].plot(results['min_obj'][1:iters_to_display])
+    ax[1,1].set(xlabel="iteration", ylabel = 'minimization objective')
+
+    for i in range(results['dualsT'].shape[1]):
+        ax[0,1].plot(results['dualsT'][1:iters_to_display,i])
+        ax[0,1].set(xlabel="iteration",ylabel='dual values')
+
+        ax[1,0].plot(results['primal_residualsT'][1:iters_to_display,i])
+        ax[1,0].set(xlabel="iteration", ylabel='primal residual')
 
     plt.show()
 

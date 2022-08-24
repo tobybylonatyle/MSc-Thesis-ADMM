@@ -143,6 +143,9 @@ def solve_two_block_ADMM(solver_name, instance_size, equal_prices, max_iter, dua
         
         objective_cost_original, dualized_constraint_value, augmentation_value, min_obj, obj_cost_locations, obj_cost_portfolio   = helpers.calculate_obj_cost(locations_instance, portfolio_instance)
      
+        if iter > 10:
+            if objective_cost_original < -12:
+                return
 
         #TODO Termination Condition
         # Euclidean_Norm_Of_Dual_Convergence =np.linalg.norm((computational_data['dualsT'][iter] - computational_data['dualsT'][iter -1 ])/computational_data['dualsT'][iter -1 ])
@@ -367,7 +370,7 @@ def solve_exchange_ADMM(solver_name, instance_size, equal_prices, max_iter, dual
 
         new_dualsT, location_instances, primal_residualsT, dualgammasT = helpers.ExchangeUpdateDuals(location_instances, i_G, e_G, imports_S_TL, exports_S_TL)
 
-        time_complexity['algorithm_time'] = time.perf_counter() - algorithm_time_start
+        time_complexity['algorithm_time'].append( time.perf_counter() - algorithm_time_start)
         objective_cost_original, dualized_constraint_value, augmentation_value, min_obj  = helpers.calculate_obj_cost_exchange(location_instances, e_G, i_G, portfolio_instance)
         # obj_cost_locations, obj_cost_portfolio 
      

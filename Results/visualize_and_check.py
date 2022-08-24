@@ -102,7 +102,7 @@ def compare_decision_vars_iterations(dv_a, dv_b):
     for iter in dv_b:
         test = dict.fromkeys(dv_a[iter].keys())
         for var in dv_b[iter]:
-            comparison = (dv_b[iter][var]-dv_a[iter][var])/dv_a[iter][var]
+            comparison = abs(dv_b[iter][var]-dv_a[iter][var])/abs(dv_a[iter][var])
             test[var] = comparison
         relative_errors[iter] = test
 
@@ -124,4 +124,59 @@ def calculate_objective_cost_from_decision_vars(dv, instance_LP):
 
     return virgin_objective_value
 
-    
+
+def plot_dual_values(computational_results,iters_to_display):
+    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(4,4), dpi=100)
+    num_of_iters = computational_results['dualsT'].shape[0]
+    for i in range(computational_results['dualsT'].shape[1]):
+        temp = abs(computational_results['dualsT'][1:,i]-computational_results['dualsT'][num_of_iters-1:,i])/abs(computational_results['dualsT'][num_of_iters-1:,i])
+        ax.plot(temp[1:iters_to_display])
+    # ax.set_title("Dual Variable Updates")
+    fig.gca().set_xlabel(r"Iteration $(k)$", fontsize=11)
+    fig.gca().set_ylabel(r'Relative Error of $\lambda_t$', fontsize=11)
+#     plt.show()
+#     fig.savefig('test.jpg')
+    return fig
+
+def plot_primal_residuals(computational_results,iters_to_display):
+    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(4,4), dpi=100)
+    for i in range(computational_results['primal_residualsT'].shape[1]):
+        ax.plot(computational_results['primal_residualsT'][1:iters_to_display,i])
+    fig.gca().set_xlabel(r"Iteration", fontsize=11)
+    fig.gca().set_ylabel(r'$r_t$', fontsize=11)
+    return fig
+
+def plot_primal_residuals_new(primal_residuals):
+    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(4,4), dpi=100)
+    for i in range(primal_residuals.shape[1]):
+        ax.plot(primal_residuals[1:,i])
+    fig.gca().set_xlabel(r"Iteration", fontsize=11)
+    fig.gca().set_ylabel(r'$r_t$', fontsize=11)
+    return fig
+        
+        
+        
+def plot_minimization_objective(computational_results):
+    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(4,4), dpi=100)
+    ax.plot(computational_results['min_obj'])
+    fig.gca().set_xlabel(r"Iteration", fontsize=11)
+    fig.gca().set_ylabel(r'Minimization Objective', fontsize=11)
+    return fig
+
+def plot_duality_gap(computational_results, iters_to_show):
+    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(4,4), dpi=100)
+    ax.plot(np.array(computational_results['min_obj'][1:iters_to_show]))
+    ax.plot(computational_results['obj_cost'][1:iters_to_show])
+    fig.legend(["dual", "primal"],loc='upper right',borderaxespad=3)
+    fig.gca().set_xlabel(r"Iteration", fontsize=11)
+    fig.gca().set_ylabel(r'Value', fontsize=11)
+    return fig
+
+def plot_relative_duality_gap(computational_results,start_iters_to_show, iters_to_show):
+    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(4,4), dpi=100)
+    a = abs(np.array(computational_results['obj_cost'][start_iters_to_show:iters_to_show]))
+    b = abs(np.array(computational_results['min_obj'][start_iters_to_show:iters_to_show]))
+    ax.plot(range(start_iters_to_show,iters_to_show),abs(a-b)/b)
+    fig.gca().set_xlabel(r"Iteration", fontsize=11)
+    fig.gca().set_ylabel(r'Duality Gap %', fontsize=11)
+    return fig, abs(a-b)/b

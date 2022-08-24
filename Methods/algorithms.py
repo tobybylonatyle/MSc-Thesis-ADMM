@@ -143,14 +143,10 @@ def solve_two_block_ADMM(solver_name, instance_size, equal_prices, max_iter, dua
         
         objective_cost_original, dualized_constraint_value, augmentation_value, min_obj, obj_cost_locations, obj_cost_portfolio   = helpers.calculate_obj_cost(locations_instance, portfolio_instance)
      
-        if iter > 10:
-            if objective_cost_original < -12:
-                return
 
-        #TODO Termination Condition
-        # Euclidean_Norm_Of_Dual_Convergence =np.linalg.norm((computational_data['dualsT'][iter] - computational_data['dualsT'][iter -1 ])/computational_data['dualsT'][iter -1 ])
-        # if(Euclidean_Norm_Of_Dual_Convergence < 1E-3):
-        #     break
+
+        #NOTE Select Termination Condition
+
 
 
         iter += 1 

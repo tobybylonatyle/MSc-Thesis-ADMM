@@ -3,7 +3,7 @@ import Methods.helpers as helpers
 import Results.visualize_and_check as vis_and_check
 
 
-experiments = [['amplxpress',10,False,10,149,"0"],['gurobi',10,False,10,149,"0"]]
+experiments = [['amplxpress',10,False,40,150,"0"],['gurobi',10,False,40,150,"0"]]
 experiment_number = 1
 for experiment in experiments:
     print(f"------- {experiment_number} -------")
